@@ -10,8 +10,6 @@ import 'package:kettik/features/booking/hold_banner.dart';
 import 'package:kettik/features/game/game_screen.dart';
 import 'package:kettik/features/ticket/ticket_screen.dart';
 
-/// Me and my games. Urgent holds also show on the feed, so nothing here is
-/// the only way to reach something that expires.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
@@ -29,8 +27,12 @@ class ProfileScreen extends StatelessWidget {
               if (g.numberOf(me) != null) g,
           ];
           bool past(Game g) =>
-              g.end.isBefore(now) || g.status == GameStatus.expired || g.status == GameStatus.cancelled;
-          final soon = mine.where((g) => !past(g) && g.placeAt(g.numberOf(me)!) is PaidPlace).toList();
+              g.end.isBefore(now) ||
+              g.status == GameStatus.expired ||
+              g.status == GameStatus.cancelled;
+          final soon = mine
+              .where((g) => !past(g) && g.placeAt(g.numberOf(me)!) is PaidPlace)
+              .toList();
           final done = mine.where(past).toList().reversed.toList();
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
@@ -63,7 +65,10 @@ class ProfileScreen extends StatelessWidget {
               if (done.isNotEmpty) const _Group('Прошедшие'),
               for (final g in done) _MyGame(game: g, now: now),
               if (mine.isEmpty)
-                Text('Здесь появятся игры, в которых у вас есть место.', style: body(15, color: K.ink2)),
+                Text(
+                  'Здесь появятся игры, в которых у вас есть место.',
+                  style: body(15, color: K.ink2),
+                ),
               Padding(
                 padding: const EdgeInsets.only(top: 16, bottom: 8),
                 child: Text('Аккаунт', style: display(15)),
@@ -88,7 +93,9 @@ class ProfileScreen extends StatelessWidget {
 
 class _Group extends StatelessWidget {
   const _Group(this.title);
+
   final String title;
+
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(top: 12, bottom: 8),
@@ -98,6 +105,7 @@ class _Group extends StatelessWidget {
 
 class _MyGame extends StatelessWidget {
   const _MyGame({required this.game, required this.now});
+
   final Game game;
   final DateTime now;
 
@@ -105,11 +113,20 @@ class _MyGame extends StatelessWidget {
   Widget build(BuildContext context) {
     final me = AppScope.of(context).store.me;
     final number = game.numberOf(me)!;
-    final over = game.end.isBefore(now) || game.status != GameStatus.funding && game.status != GameStatus.confirmed;
-    final (status, color) = game.end.isBefore(now) && game.status == GameStatus.confirmed
+    final over =
+        game.end.isBefore(now) ||
+        game.status != GameStatus.funding &&
+            game.status != GameStatus.confirmed;
+    final (
+      status,
+      color,
+    ) = game.end.isBefore(now) && game.status == GameStatus.confirmed
         ? ('Сыграно · ${game.paidCount} игроков', K.ink2)
         : game.status == GameStatus.funding
-        ? ('${game.paidCount}/${game.size} · сбор до ${hm(game.deadline)}', K.ink2)
+        ? (
+            '${game.paidCount}/${game.size} · сбор до ${hm(game.deadline)}',
+            K.ink2,
+          )
         : statusWords(game);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -120,7 +137,9 @@ class _MyGame extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           onTap: () => open(
             context,
-            game.status == GameStatus.confirmed && !over ? TicketScreen(gameId: game.id) : GameScreen(gameId: game.id),
+            game.status == GameStatus.confirmed && !over
+                ? TicketScreen(gameId: game.id)
+                : GameScreen(gameId: game.id),
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -130,7 +149,11 @@ class _MyGame extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(game.venue.name, style: body(15, weight: 600), overflow: TextOverflow.ellipsis),
+                      Text(
+                        game.venue.name,
+                        style: body(15, weight: 600),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       Text(
                         '${shortDay(game.start)} · ${hm(game.start)} · место №$number',
                         style: body(13, color: K.ink2),
@@ -152,8 +175,10 @@ class _MyGame extends StatelessWidget {
 
 class _Setting extends StatelessWidget {
   const _Setting(this.label, this.value);
+
   final String label;
   final String value;
+
   @override
   Widget build(BuildContext context) => SizedBox(
     height: 52,

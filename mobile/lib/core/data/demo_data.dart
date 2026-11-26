@@ -1,8 +1,6 @@
 import 'package:kettik/core/domain/game.dart';
 import 'package:kettik/core/domain/money.dart';
 
-// shortcut: sample games for the demo build only; replace with the API once backend/ serves games.
-
 const demoMe = Player(id: 'me', name: 'Ерлан Абенов');
 
 const _names = [
@@ -25,7 +23,10 @@ const _names = [
 ];
 
 List<Place> _paid(int count, {int from = 0}) => [
-  for (var i = 0; i < count; i++) PaidPlace(Player(id: 'p${from + i}', name: _names[(from + i) % _names.length])),
+  for (var i = 0; i < count; i++)
+    PaidPlace(
+      Player(id: 'p${from + i}', name: _names[(from + i) % _names.length]),
+    ),
 ];
 
 List<Place> _free(int count) => List.filled(count, const FreePlace());
@@ -35,7 +36,6 @@ const nis = Venue(name: 'NIS Mangilik Arena', address: 'Түркістан 32/4�
 const jastar = Venue(name: 'Поле Jastar', address: 'Мәңгілік Ел 37');
 const spartak = Venue(name: 'Spartak Indoor', address: 'Кенесары 40');
 
-/// The demo starts on Wednesday 25 November 2026 at 19:40.
 final demoStart = DateTime(2026, 11, 25, 19, 40);
 
 List<Game> demoGames() {
@@ -116,7 +116,11 @@ List<Game> demoGames() {
       organizerId: 'p60',
       createdAt: d(24, 18),
       status: GameStatus.confirmed,
-      places: [..._paid(3, from: 60), const PaidPlace(demoMe), ..._paid(6, from: 63)],
+      places: [
+        ..._paid(3, from: 60),
+        const PaidPlace(demoMe),
+        ..._paid(6, from: 63),
+      ],
     ),
     Game(
       id: 'jastar-23',
@@ -129,7 +133,12 @@ List<Game> demoGames() {
       organizerId: 'p70',
       createdAt: d(23, 9),
       status: GameStatus.expired,
-      places: [..._paid(1, from: 70), const PaidPlace(demoMe), ..._paid(7, from: 71), ..._free(1)],
+      places: [
+        ..._paid(1, from: 70),
+        const PaidPlace(demoMe),
+        ..._paid(7, from: 71),
+        ..._free(1),
+      ],
     ),
   ];
 }

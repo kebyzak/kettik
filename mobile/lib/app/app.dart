@@ -10,6 +10,7 @@ import 'package:kettik/features/profile/profile_screen.dart';
 
 class KettikApp extends StatelessWidget {
   const KettikApp({super.key, required this.store, required this.now});
+
   final GamesStore store;
   final DateTime Function() now;
 
@@ -17,13 +18,18 @@ class KettikApp extends StatelessWidget {
   Widget build(BuildContext context) => AppScope(
     store: store,
     now: now,
-    child: MaterialApp(title: 'kettik', debugShowCheckedModeBanner: false, theme: kettikTheme(), home: const Shell()),
+    child: MaterialApp(
+      title: 'kettik',
+      debugShowCheckedModeBanner: false,
+      theme: kettikTheme(),
+      home: const Shell(),
+    ),
   );
 }
 
-/// Игры · Собрать · Профиль. «Собрать» opens a full-screen form instead of a tab.
 class Shell extends StatefulWidget {
   const Shell({super.key});
+
   @override
   State<Shell> createState() => _ShellState();
 }
@@ -37,7 +43,10 @@ class _ShellState extends State<Shell> {
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        child: IndexedStack(index: _tab, children: const [FeedScreen(), ProfileScreen()]),
+        child: IndexedStack(
+          index: _tab,
+          children: const [FeedScreen(), ProfileScreen()],
+        ),
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
@@ -59,13 +68,23 @@ class _ShellState extends State<Shell> {
                 _Tab(
                   label: 'Собрать',
                   selected: false,
-                  onTap: () =>
-                      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const CreateScreen())),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const CreateScreen(),
+                    ),
+                  ),
                   icon: Container(
                     width: 48,
                     height: 32,
-                    decoration: BoxDecoration(color: K.ink, borderRadius: BorderRadius.circular(16)),
-                    child: const Icon(Icons.add_rounded, color: K.sheet, size: 20),
+                    decoration: BoxDecoration(
+                      color: K.ink,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.add_rounded,
+                      color: K.sheet,
+                      size: 20,
+                    ),
                   ),
                 ),
                 _Tab(
@@ -84,7 +103,13 @@ class _ShellState extends State<Shell> {
 }
 
 class _Tab extends StatelessWidget {
-  const _Tab({required this.label, required this.selected, required this.onTap, required this.icon});
+  const _Tab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    required this.icon,
+  });
+
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -102,7 +127,10 @@ class _Tab extends StatelessWidget {
           children: [
             icon,
             const SizedBox(height: 4),
-            Text(label, style: body(11, weight: 600, color: selected ? K.ink : K.ink2)),
+            Text(
+              label,
+              style: body(11, weight: 600, color: selected ? K.ink : K.ink2),
+            ),
           ],
         ),
       ),
@@ -110,16 +138,20 @@ class _Tab extends StatelessWidget {
   );
 }
 
-/// Tab glyph: the logo's pitch, flattened to an icon.
 class _PitchGlyph extends StatelessWidget {
   const _PitchGlyph();
+
   @override
-  Widget build(BuildContext context) =>
-      const SizedBox(width: 24, height: 24, child: CustomPaint(painter: _GlyphPainter()));
+  Widget build(BuildContext context) => const SizedBox(
+    width: 24,
+    height: 24,
+    child: CustomPaint(painter: _GlyphPainter()),
+  );
 }
 
 class _GlyphPainter extends CustomPainter {
   const _GlyphPainter();
+
   @override
   void paint(Canvas canvas, Size s) {
     final p = Paint()
@@ -136,7 +168,11 @@ class _GlyphPainter extends CustomPainter {
         ..close(),
       p,
     );
-    canvas.drawLine(Offset(s.width * .31, s.height * .71), Offset(s.width * .69, s.height * .45), p);
+    canvas.drawLine(
+      Offset(s.width * .31, s.height * .71),
+      Offset(s.width * .69, s.height * .45),
+      p,
+    );
   }
 
   @override

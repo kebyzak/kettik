@@ -4,8 +4,6 @@ import 'package:kettik/core/ui/parts.dart';
 import 'package:kettik/core/ui/pitch_geometry.dart';
 import 'package:kettik/core/ui/theme.dart';
 
-/// The isometric pitch with one numbered spot per place. Only for screens about
-/// one game; lists use [DotStrip].
 class PitchView extends StatelessWidget {
   const PitchView({
     super.key,
@@ -19,18 +17,10 @@ class PitchView extends StatelessWidget {
   });
 
   final List<SpotKind> kinds;
-
-  /// Place number to enlarge, e.g. the row tapped in the lineup.
   final int? selected;
-
-  /// Place number whose hold is running.
   final int? pulse;
-
-  /// false: draw only chalk lines, for a screen whose ground is already green.
   final bool grass;
   final bool numbers;
-
-  /// Entrance scale per place index, 0..1.
   final double Function(int index)? spotScale;
   final Widget? overlay;
 
@@ -53,7 +43,9 @@ class PitchView extends StatelessWidget {
                 left: spots[i].dx * w - d / 2,
                 top: spots[i].dy * h - d / 2,
                 child: Transform.scale(
-                  scale: (spotScale?.call(i) ?? 1) * (selected == i + 1 ? 1.35 : 1),
+                  scale:
+                      (spotScale?.call(i) ?? 1) *
+                      (selected == i + 1 ? 1.35 : 1),
                   child: _Spot(
                     number: numbers ? i + 1 : null,
                     kind: kinds[i],
@@ -72,12 +64,14 @@ class PitchView extends StatelessWidget {
 
 class _PitchPainter extends CustomPainter {
   const _PitchPainter({required this.grass});
+
   final bool grass;
 
   @override
   void paint(Canvas canvas, Size size) {
     Offset at(Offset f) => Offset(f.dx * size.width, f.dy * size.height);
-    final field = Path()..addPolygon([for (final c in pitch.corners) at(c)], true);
+    final field = Path()
+      ..addPolygon([for (final c in pitch.corners) at(c)], true);
     if (grass) canvas.drawPath(field, Paint()..color = K.pitch);
     final chalk = Paint()
       ..color = K.sheet.withValues(alpha: 0.85)
@@ -90,7 +84,14 @@ class _PitchPainter extends CustomPainter {
     canvas.save();
     canvas.translate(centre.dx, centre.dy);
     canvas.rotate(-0.28);
-    canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: size.width * 0.22, height: size.width * 0.1), chalk);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset.zero,
+        width: size.width * 0.22,
+        height: size.width * 0.1,
+      ),
+      chalk,
+    );
     canvas.restore();
   }
 
@@ -106,6 +107,7 @@ class _Spot extends StatelessWidget {
     required this.selected,
     required this.pulse,
   });
+
   final int? number;
   final SpotKind kind;
   final double size;
@@ -125,7 +127,10 @@ class _Spot extends StatelessWidget {
             child: Text('$number', style: display(size * 0.42, color: fg)),
           );
     final Widget spot = kind == SpotKind.free
-        ? CustomPaint(painter: DashedCircle(K.sheet.withValues(alpha: 0.9), width: 2), child: label)
+        ? CustomPaint(
+            painter: DashedCircle(K.sheet.withValues(alpha: 0.9), width: 2),
+            child: label,
+          )
         : DecoratedBox(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -134,9 +139,13 @@ class _Spot extends StatelessWidget {
                 SpotKind.mine => K.ink,
                 _ => null,
               },
-              border: kind == SpotKind.held ? Border.all(color: K.sheet, width: 2.5) : null,
+              border: kind == SpotKind.held
+                  ? Border.all(color: K.sheet, width: 2.5)
+                  : null,
               boxShadow: kind == SpotKind.paid
-                  ? const [BoxShadow(color: Color(0x4022302A), offset: Offset(0, 2))]
+                  ? const [
+                      BoxShadow(color: Color(0x4022302A), offset: Offset(0, 2)),
+                    ]
                   : null,
             ),
             child: label,
@@ -157,16 +166,20 @@ class _Spot extends StatelessWidget {
   }
 }
 
-/// A ring that breathes around the place whose hold is running.
 class _Pulse extends StatefulWidget {
   const _Pulse({required this.child});
+
   final Widget child;
+
   @override
   State<_Pulse> createState() => _PulseState();
 }
 
 class _PulseState extends State<_Pulse> with SingleTickerProviderStateMixin {
-  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
+  late final _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  );
 
   @override
   void didChangeDependencies() {

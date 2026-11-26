@@ -11,16 +11,22 @@ enum SpotKind { paid, held, free, mine }
 
 SpotKind kindOf(Place place, Player me) => switch (place) {
   FreePlace() => SpotKind.free,
-  HeldPlace(:final player) => player.id == me.id ? SpotKind.mine : SpotKind.held,
-  PaidPlace(:final player) => player.id == me.id ? SpotKind.mine : SpotKind.paid,
+  HeldPlace(:final player) =>
+    player.id == me.id ? SpotKind.mine : SpotKind.held,
+  PaidPlace(:final player) =>
+    player.id == me.id ? SpotKind.mine : SpotKind.paid,
 };
 
-List<SpotKind> kindsOf(Game g, Player me) => [for (final p in g.places) kindOf(p, me)];
+List<SpotKind> kindsOf(Game g, Player me) => [
+  for (final p in g.places) kindOf(p, me),
+];
 
 /// Rebuilds every second, for countdowns.
 class EverySecond extends StatefulWidget {
   const EverySecond({super.key, required this.builder});
+
   final WidgetBuilder builder;
+
   @override
   State<EverySecond> createState() => _EverySecondState();
 }
@@ -46,8 +52,10 @@ class _EverySecondState extends State<EverySecond> {
 
 class DashedCircle extends CustomPainter {
   const DashedCircle(this.color, {this.width = 1.5});
+
   final Color color;
   final double width;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
@@ -57,17 +65,24 @@ class DashedCircle extends CustomPainter {
     final rect = Offset.zero & size;
     const dashes = 12;
     for (var i = 0; i < dashes; i++) {
-      canvas.drawArc(rect.deflate(width / 2), i * 2 * math.pi / dashes, math.pi / dashes, false, paint);
+      canvas.drawArc(
+        rect.deflate(width / 2),
+        i * 2 * math.pi / dashes,
+        math.pi / dashes,
+        false,
+        paint,
+      );
     }
   }
 
   @override
-  bool shouldRepaint(DashedCircle old) => old.color != color || old.width != width;
+  bool shouldRepaint(DashedCircle old) =>
+      old.color != color || old.width != width;
 }
 
-/// The numbered circle in the lineup: same number and state as the spot on the pitch.
 class PlaceChip extends StatelessWidget {
   const PlaceChip(this.number, this.kind, {super.key, this.size = 28});
+
   final int number;
   final SpotKind kind;
   final double size;
@@ -88,16 +103,26 @@ class PlaceChip extends StatelessWidget {
       child: kind == SpotKind.free
           ? CustomPaint(painter: const DashedCircle(K.dash), child: label)
           : DecoratedBox(
-              decoration: BoxDecoration(color: fill, shape: BoxShape.circle, border: border),
+              decoration: BoxDecoration(
+                color: fill,
+                shape: BoxShape.circle,
+                border: border,
+              ),
               child: label,
             ),
     );
   }
 }
 
-/// One dot per place, for lists where a pitch would be noise.
 class DotStrip extends StatelessWidget {
-  const DotStrip(this.kinds, {super.key, this.size = 8, this.faded = false, this.maxWidth});
+  const DotStrip(
+    this.kinds, {
+    super.key,
+    this.size = 8,
+    this.faded = false,
+    this.maxWidth,
+  });
+
   final List<SpotKind> kinds;
   final double size;
   final bool faded;
@@ -115,7 +140,9 @@ class DotStrip extends StatelessWidget {
           SpotKind.held => null,
           SpotKind.free => K.line,
         },
-        border: k == SpotKind.held ? Border.all(color: K.signal, width: 2) : null,
+        border: k == SpotKind.held
+            ? Border.all(color: K.signal, width: 2)
+            : null,
       ),
     );
     final strip = Wrap(
@@ -133,7 +160,14 @@ class DotStrip extends StatelessWidget {
 enum PillStyle { primary, outline, quiet }
 
 class PillButton extends StatelessWidget {
-  const PillButton(this.label, {super.key, required this.onPressed, this.style = PillStyle.primary, this.height = 56});
+  const PillButton(
+    this.label, {
+    super.key,
+    required this.onPressed,
+    this.style = PillStyle.primary,
+    this.height = 56,
+  });
+
   final String label;
   final VoidCallback? onPressed;
   final PillStyle style;
@@ -143,7 +177,9 @@ class PillButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(height / 2),
-      side: style == PillStyle.outline ? const BorderSide(color: K.ink, width: 2) : BorderSide.none,
+      side: style == PillStyle.outline
+          ? const BorderSide(color: K.ink, width: 2)
+          : BorderSide.none,
     );
     return SizedBox(
       height: height,
@@ -152,11 +188,19 @@ class PillButton extends StatelessWidget {
         onPressed: onPressed,
         style: TextButton.styleFrom(
           shape: shape,
-          backgroundColor: style == PillStyle.primary ? K.ink : Colors.transparent,
-          foregroundColor: style == PillStyle.primary ? K.sheet : (style == PillStyle.quiet ? K.ink2 : K.ink),
-          disabledBackgroundColor: style == PillStyle.primary ? K.verge : Colors.transparent,
+          backgroundColor: style == PillStyle.primary
+              ? K.ink
+              : Colors.transparent,
+          foregroundColor: style == PillStyle.primary
+              ? K.sheet
+              : (style == PillStyle.quiet ? K.ink2 : K.ink),
+          disabledBackgroundColor: style == PillStyle.primary
+              ? K.verge
+              : Colors.transparent,
           disabledForegroundColor: K.ink2,
-          textStyle: style == PillStyle.primary ? display(15, weight: 600) : body(15, weight: 600),
+          textStyle: style == PillStyle.primary
+              ? display(15, weight: 600)
+              : body(15, weight: 600),
         ),
         child: Text(label, textAlign: TextAlign.center),
       ),
@@ -166,7 +210,9 @@ class PillButton extends StatelessWidget {
 
 class Wordmark extends StatelessWidget {
   const Wordmark({super.key, this.height = 20});
+
   final double height;
+
   @override
   Widget build(BuildContext context) => SvgPicture.asset(
     'assets/brand/wordmark.svg',
@@ -177,10 +223,17 @@ class Wordmark extends StatelessWidget {
 }
 
 class Back extends StatelessWidget {
-  const Back({super.key, this.tooltip = 'Назад', this.icon = Icons.arrow_back_ios_new_rounded, this.onPressed});
+  const Back({
+    super.key,
+    this.tooltip = 'Назад',
+    this.icon = Icons.arrow_back_ios_new_rounded,
+    this.onPressed,
+  });
+
   final String tooltip;
   final IconData icon;
   final VoidCallback? onPressed;
+
   @override
   Widget build(BuildContext context) => IconButton(
     tooltip: tooltip,
@@ -189,7 +242,6 @@ class Back extends StatelessWidget {
   );
 }
 
-/// White card, radius 20: the only container in the system.
 class Sheet extends StatelessWidget {
   const Sheet({
     super.key,
@@ -198,10 +250,12 @@ class Sheet extends StatelessWidget {
     this.color = K.sheet,
     this.ring,
   });
+
   final Widget child;
   final EdgeInsets padding;
   final Color color;
   final Color? ring;
+
   @override
   Widget build(BuildContext context) => Container(
     padding: padding,
@@ -214,16 +268,21 @@ class Sheet extends StatelessWidget {
   );
 }
 
-/// A rule line with a check (kept promise) or an info mark (caveat).
 class RuleLine extends StatelessWidget {
   const RuleLine(this.text, {super.key, this.caveat = false});
+
   final String text;
   final bool caveat;
+
   @override
   Widget build(BuildContext context) => Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Icon(caveat ? Icons.info_outline_rounded : Icons.check_rounded, size: 18, color: caveat ? K.ink2 : K.pitchText),
+      Icon(
+        caveat ? Icons.info_outline_rounded : Icons.check_rounded,
+        size: 18,
+        color: caveat ? K.ink2 : K.pitchText,
+      ),
       const SizedBox(width: 8),
       Expanded(
         child: Text(text, style: body(13, color: caveat ? K.ink2 : K.ink)),
@@ -234,13 +293,19 @@ class RuleLine extends StatelessWidget {
 
 class Avatar extends StatelessWidget {
   const Avatar(this.name, {super.key, this.size = 56, this.ring = false});
+
   final String name;
   final double size;
   final bool ring;
 
   @override
   Widget build(BuildContext context) {
-    final initials = name.split(' ').where((w) => w.isNotEmpty).take(2).map((w) => w[0]).join();
+    final initials = name
+        .split(' ')
+        .where((w) => w.isNotEmpty)
+        .take(2)
+        .map((w) => w[0])
+        .join();
     return Container(
       width: size,
       height: size,
@@ -249,10 +314,15 @@ class Avatar extends StatelessWidget {
         color: K.pitch,
         shape: BoxShape.circle,
         boxShadow: ring
-            ? const [BoxShadow(color: K.sheet, spreadRadius: 2), BoxShadow(color: K.ink, spreadRadius: 4)]
+            ? const [
+                BoxShadow(color: K.sheet, spreadRadius: 2),
+                BoxShadow(color: K.ink, spreadRadius: 4),
+              ]
             : null,
       ),
-      child: ExcludeSemantics(child: Text(initials, style: body(size * 0.38, weight: 600))),
+      child: ExcludeSemantics(
+        child: Text(initials, style: body(size * 0.38, weight: 600)),
+      ),
     );
   }
 }

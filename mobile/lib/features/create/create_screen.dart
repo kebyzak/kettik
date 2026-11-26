@@ -18,15 +18,17 @@ const _levels = ['Любители', 'Средний', 'Сильный'];
 const minSize = 6;
 const maxSize = 22;
 
-/// `5×5, три команды` for 15, `6×6` for 12, `с заменой` for odd sizes.
 String formatFor(int size) {
-  if (size % 3 == 0 && size >= 12) return '${size ~/ 3}×${size ~/ 3}, три команды';
+  if (size % 3 == 0 && size >= 12) {
+    return '${size ~/ 3}×${size ~/ 3}, три команды';
+  }
   if (size.isEven) return '${size ~/ 2}×${size ~/ 2}';
   return '${size ~/ 2}×${size ~/ 2} с заменой';
 }
 
 class CreateScreen extends StatefulWidget {
   const CreateScreen({super.key});
+
   @override
   State<CreateScreen> createState() => _CreateScreenState();
 }
@@ -37,10 +39,12 @@ class _CreateScreenState extends State<CreateScreen> {
   var _size = 15;
   var _level = 0;
 
-  DateTime _at(DateTime now, (int, int) s) => DateTime(now.year, now.month, now.day, s.$1, s.$2);
+  DateTime _at(DateTime now, (int, int) s) =>
+      DateTime(now.year, now.month, now.day, s.$1, s.$2);
 
   bool _open(DateTime now, (int, int) s) =>
-      !_bookedSlots.contains(s) && !_at(now, s).subtract(fundingCloseBeforeStart).isBefore(now);
+      !_bookedSlots.contains(s) &&
+      !_at(now, s).subtract(fundingCloseBeforeStart).isBefore(now);
 
   void _create(DateTime now, (int, int) slot) {
     final store = AppScope.of(context).store;
@@ -55,7 +59,11 @@ class _CreateScreenState extends State<CreateScreen> {
       level: _levels[_level],
       now: now,
     );
-    Navigator.of(context).pushReplacement(MaterialPageRoute<void>(builder: (_) => HoldScreen(gameId: id, number: 1)));
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => HoldScreen(gameId: id, number: 1),
+      ),
+    );
   }
 
   Tenge get _rent => Tenge(_hourly.value * _durations[_duration].$1 ~/ 60);
@@ -65,7 +73,9 @@ class _CreateScreenState extends State<CreateScreen> {
     final now = AppScope.of(context).now();
     final slot = _slot ?? _slots.where((s) => _open(now, s)).firstOrNull;
     final shares = splitRent(_rent, _size);
-    final perPlayer = shares.first == shares.last ? formatTenge(shares.last) : 'от ${formatTenge(shares.last)}';
+    final perPlayer = shares.first == shares.last
+        ? formatTenge(shares.last)
+        : 'от ${formatTenge(shares.last)}';
     return Scaffold(
       body: SafeArea(
         child: ListView(
@@ -77,7 +87,10 @@ class _CreateScreenState extends State<CreateScreen> {
                 const Spacer(),
                 Transform.translate(
                   offset: const Offset(12, 0),
-                  child: const Back(tooltip: 'Закрыть', icon: Icons.close_rounded),
+                  child: const Back(
+                    tooltip: 'Закрыть',
+                    icon: Icons.close_rounded,
+                  ),
                 ),
               ],
             ),
@@ -87,7 +100,10 @@ class _CreateScreenState extends State<CreateScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('${nis.name} · поле 1', style: body(15, weight: 600)),
-                  Text('${nis.address} · искусственная трава', style: body(13, color: K.ink2)),
+                  Text(
+                    '${nis.address} · искусственная трава',
+                    style: body(13, color: K.ink2),
+                  ),
                 ],
               ),
             ),
@@ -131,23 +147,34 @@ class _CreateScreenState extends State<CreateScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('Игроков', style: body(15, weight: 600)),
-                              Text('${formatFor(_size)} · первое место ваше', style: body(13, color: K.ink2)),
+                              Text(
+                                '${formatFor(_size)} · первое место ваше',
+                                style: body(13, color: K.ink2),
+                              ),
                             ],
                           ),
                         ),
                         _Step(
                           Icons.remove_rounded,
                           'Меньше игроков',
-                          _size > minSize ? () => setState(() => _size--) : null,
+                          _size > minSize
+                              ? () => setState(() => _size--)
+                              : null,
                         ),
                         SizedBox(
                           width: 48,
-                          child: Text('$_size', textAlign: TextAlign.center, style: display(22)),
+                          child: Text(
+                            '$_size',
+                            textAlign: TextAlign.center,
+                            style: display(22),
+                          ),
                         ),
                         _Step(
                           Icons.add_rounded,
                           'Больше игроков',
-                          _size < maxSize ? () => setState(() => _size++) : null,
+                          _size < maxSize
+                              ? () => setState(() => _size++)
+                              : null,
                         ),
                       ],
                     ),
@@ -165,12 +192,20 @@ class _CreateScreenState extends State<CreateScreen> {
                                     width: 24,
                                     height: 24,
                                     alignment: Alignment.center,
-                                    decoration: const BoxDecoration(color: K.ink, shape: BoxShape.circle),
-                                    child: Text('вы', style: display(9, color: K.sheet)),
+                                    decoration: const BoxDecoration(
+                                      color: K.ink,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      'вы',
+                                      style: display(9, color: K.sheet),
+                                    ),
                                   )
                                 : const SizedBox.square(
                                     dimension: 24,
-                                    child: CustomPaint(painter: DashedCircle(K.dash)),
+                                    child: CustomPaint(
+                                      painter: DashedCircle(K.dash),
+                                    ),
                                   ),
                         ],
                       ),
@@ -182,7 +217,10 @@ class _CreateScreenState extends State<CreateScreen> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: Text('Аренда ${formatTenge(_rent)} : $_size', style: body(15, color: K.ink2)),
+                          child: Text(
+                            'Аренда ${formatTenge(_rent)} : $_size',
+                            style: body(15, color: K.ink2),
+                          ),
                         ),
                         Text(perPlayer, style: display(15)),
                         Text(' с игрока', style: body(15, color: K.ink2)),
@@ -193,7 +231,11 @@ class _CreateScreenState extends State<CreateScreen> {
               ),
             ),
             _Label('Уровень'),
-            _Segmented(labels: _levels, selected: _level, onSelect: (i) => setState(() => _level = i)),
+            _Segmented(
+              labels: _levels,
+              selected: _level,
+              onSelect: (i) => setState(() => _level = i),
+            ),
           ],
         ),
       ),
@@ -212,7 +254,9 @@ class _CreateScreenState extends State<CreateScreen> {
                 ),
               ),
             PillButton(
-              slot == null ? 'На сегодня свободного времени нет' : 'Создать и оплатить · ${formatTenge(shares.first)}',
+              slot == null
+                  ? 'На сегодня свободного времени нет'
+                  : 'Создать и оплатить · ${formatTenge(shares.first)}',
               onPressed: slot == null ? null : () => _create(now, slot),
             ),
           ],
@@ -224,7 +268,9 @@ class _CreateScreenState extends State<CreateScreen> {
 
 class _Label extends StatelessWidget {
   const _Label(this.text);
+
   final String text;
+
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(top: 20, bottom: 10),
@@ -234,14 +280,20 @@ class _Label extends StatelessWidget {
 
 class _Step extends StatelessWidget {
   const _Step(this.icon, this.tooltip, this.onPressed);
+
   final IconData icon;
   final String tooltip;
   final VoidCallback? onPressed;
+
   @override
   Widget build(BuildContext context) => IconButton.filled(
     tooltip: tooltip,
     onPressed: onPressed,
-    style: IconButton.styleFrom(backgroundColor: K.chalk, foregroundColor: K.ink, disabledBackgroundColor: K.chalk),
+    style: IconButton.styleFrom(
+      backgroundColor: K.chalk,
+      foregroundColor: K.ink,
+      disabledBackgroundColor: K.chalk,
+    ),
     icon: Icon(icon),
   );
 }
@@ -254,6 +306,7 @@ class _Choice extends StatelessWidget {
     required this.onTap,
     this.numeric = false,
   });
+
   final String label;
   final bool selected;
   final bool enabled;
@@ -285,7 +338,12 @@ class _Choice extends StatelessWidget {
 }
 
 class _Segmented extends StatelessWidget {
-  const _Segmented({required this.labels, required this.selected, required this.onSelect});
+  const _Segmented({
+    required this.labels,
+    required this.selected,
+    required this.onSelect,
+  });
+
   final List<String> labels;
   final int selected;
   final ValueChanged<int> onSelect;
@@ -293,14 +351,22 @@ class _Segmented extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(4),
-    decoration: BoxDecoration(color: K.sheet, borderRadius: BorderRadius.circular(24)),
+    decoration: BoxDecoration(
+      color: K.sheet,
+      borderRadius: BorderRadius.circular(24),
+    ),
     child: Row(
       children: [
         for (var i = 0; i < labels.length; i++)
           Expanded(
             child: SizedBox(
               height: 40,
-              child: _Choice(label: labels[i], selected: i == selected, enabled: true, onTap: () => onSelect(i)),
+              child: _Choice(
+                label: labels[i],
+                selected: i == selected,
+                enabled: true,
+                onTap: () => onSelect(i),
+              ),
             ),
           ),
       ],

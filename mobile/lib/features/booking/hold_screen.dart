@@ -11,22 +11,25 @@ import 'package:kettik/core/ui/words.dart';
 import 'package:kettik/features/booking/confirmed_screen.dart';
 import 'package:kettik/features/game/game_screen.dart';
 
-/// The ten minutes between taking a place and paying for it.
 class HoldScreen extends StatelessWidget {
   const HoldScreen({super.key, required this.gameId, required this.number});
+
   final String gameId;
   final int number;
 
   void _pay(BuildContext context) {
     final scope = AppScope.of(context);
-    // shortcut: credits the payment at once; the real flow opens the provider's page and waits for its notification.
     try {
       scope.store.pay(gameId, number, scope.now());
     } on BookingRejected {
-      return; // the hold lapsed between the last tick and the tap; the next tick shows it
+      return;
     }
-    final confirmed = scope.store.game(gameId, scope.now()).status == GameStatus.confirmed;
-    landOn(context, confirmed ? ConfirmedScreen(gameId: gameId) : GameScreen(gameId: gameId));
+    final confirmed =
+        scope.store.game(gameId, scope.now()).status == GameStatus.confirmed;
+    landOn(
+      context,
+      confirmed ? ConfirmedScreen(gameId: gameId) : GameScreen(gameId: gameId),
+    );
   }
 
   void _release(BuildContext context) {
@@ -66,12 +69,20 @@ class HoldScreen extends StatelessWidget {
                         kinds: kindsOf(g, me),
                         numbers: false,
                         pulse: held ? number : null,
-                        overlay: Text(held ? 'Место №$number за вами' : 'Место освободилось', style: display(22)),
+                        overlay: Text(
+                          held
+                              ? 'Место №$number за вами'
+                              : 'Место освободилось',
+                          style: display(22),
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if (held) _Timer(left: place.until.difference(now)) else const _Lapsed(),
+                  if (held)
+                    _Timer(left: place.until.difference(now))
+                  else
+                    const _Lapsed(),
                   const SizedBox(height: 12),
                   Sheet(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -79,13 +90,19 @@ class HoldScreen extends StatelessWidget {
                       children: [
                         _Fact('Игра', g.venue.name),
                         _Fact('Когда', '${shortDay(g.start)} · ${hm(g.start)}'),
-                        _Fact('Аренда', '${formatTenge(g.rent)} на ${g.size} мест'),
+                        _Fact(
+                          'Аренда',
+                          '${formatTenge(g.rent)} на ${g.size} мест',
+                        ),
                         const Divider(height: 16, color: K.line),
                         Row(
                           children: [
                             Text('Ваша доля', style: body(15, weight: 600)),
                             const Spacer(),
-                            Text(formatTenge(g.shareOf(number)), style: display(15)),
+                            Text(
+                              formatTenge(g.shareOf(number)),
+                              style: display(15),
+                            ),
                           ],
                         ),
                       ],
@@ -94,7 +111,9 @@ class HoldScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   RuleLine(refundPromise(g, g.shareOf(number))),
                   const SizedBox(height: 8),
-                  const RuleLine('Передумаете до подтверждения — деньги вернутся.'),
+                  const RuleLine(
+                    'Передумаете до подтверждения — деньги вернутся.',
+                  ),
                   const SizedBox(height: 8),
                   const RuleLine(noRefundAfterConfirm, caveat: true),
                 ],
@@ -106,9 +125,15 @@ class HoldScreen extends StatelessWidget {
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        PillButton('Оплатить ${formatTenge(g.shareOf(number))}', onPressed: () => _pay(context)),
+                        PillButton(
+                          'Оплатить ${formatTenge(g.shareOf(number))}',
+                          onPressed: () => _pay(context),
+                        ),
                         const SizedBox(height: 4),
-                        Text('Картой на защищённой странице банка', style: body(13, color: K.ink2)),
+                        Text(
+                          'Картой на защищённой странице банка',
+                          style: body(13, color: K.ink2),
+                        ),
                         PillButton(
                           'Освободить место',
                           style: PillStyle.quiet,
@@ -117,7 +142,10 @@ class HoldScreen extends StatelessWidget {
                         ),
                       ],
                     )
-                  : PillButton('Вернуться к игре', onPressed: () => Navigator.of(context).pop()),
+                  : PillButton(
+                      'Вернуться к игре',
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
             ),
           );
         },
@@ -128,7 +156,9 @@ class HoldScreen extends StatelessWidget {
 
 class _Timer extends StatelessWidget {
   const _Timer({required this.left});
+
   final Duration left;
+
   @override
   Widget build(BuildContext context) {
     final urgent = left < const Duration(minutes: 2);
@@ -169,6 +199,7 @@ class _Timer extends StatelessWidget {
 
 class _Lapsed extends StatelessWidget {
   const _Lapsed();
+
   @override
   Widget build(BuildContext context) => Sheet(
     padding: const EdgeInsets.all(20),
@@ -177,7 +208,10 @@ class _Lapsed extends StatelessWidget {
       children: [
         Text('Время вышло', style: body(15, weight: 600)),
         const SizedBox(height: 4),
-        Text('Если деньги успели списаться, они вернутся автоматически.', style: body(13, color: K.ink2)),
+        Text(
+          'Если деньги успели списаться, они вернутся автоматически.',
+          style: body(13, color: K.ink2),
+        ),
       ],
     ),
   );
@@ -185,8 +219,10 @@ class _Lapsed extends StatelessWidget {
 
 class _Fact extends StatelessWidget {
   const _Fact(this.label, this.value);
+
   final String label;
   final String value;
+
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 4),
@@ -195,7 +231,11 @@ class _Fact extends StatelessWidget {
         Text(label, style: body(15, color: K.ink2)),
         const SizedBox(width: 16),
         Expanded(
-          child: Text(value, textAlign: TextAlign.end, overflow: TextOverflow.ellipsis),
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     ),
