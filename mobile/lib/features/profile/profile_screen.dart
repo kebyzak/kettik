@@ -6,6 +6,7 @@ import 'package:kettik/core/ui/format.dart';
 import 'package:kettik/core/ui/parts.dart';
 import 'package:kettik/core/ui/theme.dart';
 import 'package:kettik/core/ui/words.dart';
+import 'package:kettik/features/auth/sign_in.dart';
 import 'package:kettik/features/booking/hold_banner.dart';
 import 'package:kettik/features/game/game_screen.dart';
 import 'package:kettik/features/ticket/ticket_screen.dart';
@@ -21,7 +22,8 @@ class ProfileScreen extends StatelessWidget {
       builder: (context, _) => EverySecond(
         builder: (context) {
           final now = scope.now();
-          final me = scope.store.me;
+          final me = scope.me;
+          if (me == null) return const _SignedOut();
           final mine = [
             for (final g in scope.store.games(now))
               if (g.numberOf(me) != null) g,
@@ -56,7 +58,7 @@ class ProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 24, bottom: 8),
                 child: Text('Мои игры', style: display(15)),
               ),
-              for (final (g, n) in scope.store.myHolds(now)) ...[
+              for (final (g, n) in scope.store.myHolds(scope.me, now)) ...[
                 HoldBanner(game: g, number: n, now: now),
                 const SizedBox(height: 8),
               ],
@@ -82,6 +84,13 @@ class ProfileScreen extends StatelessWidget {
                     _Setting('Уведомления', 'Включены'),
                   ],
                 ),
+              ),
+              const SizedBox(height: 16),
+              PillButton(
+                'Выйти',
+                style: PillStyle.quiet,
+                height: 48,
+                onPressed: scope.session.signOut,
               ),
             ],
           );
@@ -111,7 +120,7 @@ class _MyGame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final me = AppScope.of(context).store.me;
+    final me = AppScope.of(context).me;
     final number = game.numberOf(me)!;
     final over =
         game.end.isBefore(now) ||
@@ -192,5 +201,24 @@ class _Setting extends StatelessWidget {
         ],
       ),
     ),
+  );
+}
+
+class _SignedOut extends StatelessWidget {
+  const _SignedOut();
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+    children: [
+      Text('Профиль', style: display(22)),
+      const SizedBox(height: 8),
+      Text(
+        'Войдите, чтобы занимать места, собирать игры и видеть их здесь. Смотреть игры можно и без входа.',
+        style: body(15, color: K.ink2),
+      ),
+      const SizedBox(height: 24),
+      PillButton('Войти по почте', onPressed: () => signIn(context)),
+    ],
   );
 }

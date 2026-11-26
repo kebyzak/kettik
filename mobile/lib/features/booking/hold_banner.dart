@@ -6,9 +6,14 @@ import 'package:kettik/core/ui/format.dart';
 import 'package:kettik/core/ui/theme.dart';
 import 'package:kettik/features/booking/hold_screen.dart';
 
-/// An unpaid hold of mine. Shown on the feed and in the profile while it runs.
 class HoldBanner extends StatelessWidget {
-  const HoldBanner({super.key, required this.game, required this.number, required this.now});
+  const HoldBanner({
+    super.key,
+    required this.game,
+    required this.number,
+    required this.now,
+  });
+
   final Game game;
   final int number;
   final DateTime now;
@@ -34,7 +39,10 @@ class HoldBanner extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Место №$number держим ещё $left', style: body(13, weight: 600, color: K.signal)),
+                    Text(
+                      'Место №$number держим ещё $left',
+                      style: body(13, weight: 600, color: K.signal),
+                    ),
                     Text(
                       '${game.venue.name} · ${shortDay(game.start)}, ${hm(game.start)}',
                       style: body(15, weight: 600),
@@ -48,8 +56,14 @@ class HoldBanner extends StatelessWidget {
                 height: 40,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 alignment: Alignment.center,
-                decoration: BoxDecoration(color: K.ink, borderRadius: BorderRadius.circular(20)),
-                child: Text('Оплатить', style: display(13, weight: 600, color: K.sheet)),
+                decoration: BoxDecoration(
+                  color: K.ink,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Оплатить',
+                  style: display(13, weight: 600, color: K.sheet),
+                ),
               ),
             ],
           ),

@@ -14,6 +14,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -26,3 +27,14 @@ flutter:
     - family: Onest
       fonts:
         - asset: assets/fonts/Onest.ttf
+
+# Regenerate with `dart run flutter_launcher_icons` after changing branding/*.svg and re-rendering the PNGs.
+flutter_launcher_icons:
+  image_path: branding/icon.png
+  android: true
+  adaptive_icon_background: "#282C29"
+  adaptive_icon_foreground: branding/foreground.png
+  adaptive_icon_monochrome: branding/foreground.png
+  ios: true
+  remove_alpha_ios: true
+# The generator rewrites ios/Runner.xcodeproj/project.pbxproj wrongly; revert that file after running it.

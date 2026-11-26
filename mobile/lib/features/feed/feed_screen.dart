@@ -27,7 +27,11 @@ class _FeedScreenState extends State<FeedScreen> {
       builder: (context, _) => EverySecond(
         builder: (context) {
           final now = scope.now();
-          final day = DateTime(now.year, now.month, now.day).add(Duration(days: _day));
+          final day = DateTime(
+            now.year,
+            now.month,
+            now.day,
+          ).add(Duration(days: _day));
           final games = [
             for (final g in scope.store.games(now))
               if (g.status == GameStatus.funding && sameDay(g.start, day)) g,
@@ -43,17 +47,27 @@ class _FeedScreenState extends State<FeedScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              _DayStrip(now: now, selected: _day, onSelect: (i) => setState(() => _day = i)),
-              for (final (g, n) in scope.store.myHolds(now)) ...[
+              _DayStrip(
+                now: now,
+                selected: _day,
+                onSelect: (i) => setState(() => _day = i),
+              ),
+              for (final (g, n) in scope.store.myHolds(scope.me, now)) ...[
                 const SizedBox(height: 12),
                 HoldBanner(game: g, number: n, now: now),
               ],
               Padding(
                 padding: const EdgeInsets.only(top: 20, bottom: 8),
-                child: Text(dayTitle(day, now), style: display(13, weight: 500, color: K.ink2)),
+                child: Text(
+                  dayTitle(day, now),
+                  style: display(13, weight: 500, color: K.ink2),
+                ),
               ),
               if (games.isEmpty) const _EmptyDay(),
-              for (final g in games) ...[_GameCard(game: g), const SizedBox(height: 8)],
+              for (final g in games) ...[
+                _GameCard(game: g),
+                const SizedBox(height: 8),
+              ],
             ],
           );
         },
@@ -63,7 +77,11 @@ class _FeedScreenState extends State<FeedScreen> {
 }
 
 class _DayStrip extends StatelessWidget {
-  const _DayStrip({required this.now, required this.selected, required this.onSelect});
+  const _DayStrip({
+    required this.now,
+    required this.selected,
+    required this.onSelect,
+  });
   final DateTime now;
   final int selected;
   final ValueChanged<int> onSelect;
@@ -96,8 +114,14 @@ class _DayStrip extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(weekdayShort(d), style: body(11, weight: 600, color: on ? K.sheet : K.ink)),
-                Text('${d.day}', style: display(15, color: on ? K.sheet : K.ink)),
+                Text(
+                  weekdayShort(d),
+                  style: body(11, weight: 600, color: on ? K.sheet : K.ink),
+                ),
+                Text(
+                  '${d.day}',
+                  style: display(15, color: on ? K.sheet : K.ink),
+                ),
               ],
             ),
           ),
@@ -113,7 +137,7 @@ class _GameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final me = AppScope.of(context).store.me;
+    final me = AppScope.of(context).me;
     final free = game.places.whereType<FreePlace>().length;
     return Material(
       color: K.sheet,
@@ -131,14 +155,21 @@ class _GameCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(timeRange(game.start, game.end), style: display(15)),
-                    Text(game.venue.name, style: body(15, weight: 600), overflow: TextOverflow.ellipsis),
+                    Text(
+                      game.venue.name,
+                      style: body(15, weight: 600),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     Text(
                       '${game.venue.address} · ${game.format}',
                       style: body(13, color: K.ink2),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 10),
-                    Semantics(label: 'Оплатили ${game.paidCount} из ${game.size}', child: DotStrip(kindsOf(game, me))),
+                    Semantics(
+                      label: 'Оплатили ${game.paidCount} из ${game.size}',
+                      child: DotStrip(kindsOf(game, me)),
+                    ),
                   ],
                 ),
               ),
@@ -146,10 +177,17 @@ class _GameCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(formatTenge(game.shareOf(game.size)), style: display(13)),
+                  Text(
+                    formatTenge(game.shareOf(game.size)),
+                    style: display(13),
+                  ),
                   Text(
                     free == 0 ? 'держат места' : placesLeft(free),
-                    style: body(13, weight: free <= 2 ? 600 : 400, color: free <= 2 ? K.signal : K.ink2),
+                    style: body(
+                      13,
+                      weight: free <= 2 ? 600 : 400,
+                      color: free <= 2 ? K.signal : K.ink2,
+                    ),
                   ),
                 ],
               ),
@@ -171,9 +209,15 @@ class _EmptyDay extends StatelessWidget {
       children: [
         Text('Поле пустое', style: display(22)),
         const SizedBox(height: 4),
-        Text('Пока никто не собирает. Соберите сами — первое место ваше.', style: body(15, color: K.ink2)),
+        Text(
+          'Пока никто не собирает. Соберите сами — первое место ваше.',
+          style: body(15, color: K.ink2),
+        ),
         const SizedBox(height: 16),
-        PillButton('Собрать игру', onPressed: () => open(context, const CreateScreen())),
+        PillButton(
+          'Собрать игру',
+          onPressed: () => open(context, const CreateScreen()),
+        ),
       ],
     ),
   );

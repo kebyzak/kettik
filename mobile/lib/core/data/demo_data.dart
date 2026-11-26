@@ -2,6 +2,7 @@ import 'package:kettik/core/domain/game.dart';
 import 'package:kettik/core/domain/money.dart';
 
 const demoMe = Player(id: 'me', name: 'Ерлан Абенов');
+const demoEmail = 'erlan@kettik.kz';
 
 const _names = [
   'Азамат',

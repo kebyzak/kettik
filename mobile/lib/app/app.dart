@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:kettik/core/data/games_store.dart';
+import 'package:kettik/core/data/session.dart';
 import 'package:kettik/core/scope.dart';
 import 'package:kettik/core/ui/parts.dart';
 import 'package:kettik/core/ui/theme.dart';
@@ -9,21 +10,34 @@ import 'package:kettik/features/feed/feed_screen.dart';
 import 'package:kettik/features/profile/profile_screen.dart';
 
 class KettikApp extends StatelessWidget {
-  const KettikApp({super.key, required this.store, required this.now});
+  const KettikApp({
+    super.key,
+    required this.store,
+    required this.session,
+    required this.now,
+  });
 
   final GamesStore store;
+  final Session session;
   final DateTime Function() now;
 
   @override
-  Widget build(BuildContext context) => AppScope(
-    store: store,
-    now: now,
-    child: MaterialApp(
-      title: 'kettik',
-      debugShowCheckedModeBanner: false,
-      theme: kettikTheme(),
-      home: const Shell(),
-    ),
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: session,
+    builder: (context, _) {
+      return AppScope(
+        store: store,
+        session: session,
+        me: session.me,
+        now: now,
+        child: MaterialApp(
+          title: 'kettik',
+          debugShowCheckedModeBanner: false,
+          theme: kettikTheme(),
+          home: const Shell(),
+        ),
+      );
+    },
   );
 }
 
@@ -39,7 +53,7 @@ class _ShellState extends State<Shell> {
 
   @override
   Widget build(BuildContext context) {
-    final me = AppScope.of(context).store.me;
+    final me = AppScope.of(context).me;
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -91,7 +105,13 @@ class _ShellState extends State<Shell> {
                   label: 'Профиль',
                   selected: _tab == 1,
                   onTap: () => setState(() => _tab = 1),
-                  icon: Avatar(me.name, size: 26, ring: _tab == 1),
+                  icon: me == null
+                      ? const Icon(
+                          Icons.person_outline_rounded,
+                          size: 26,
+                          color: K.ink,
+                        )
+                      : Avatar(me.name, size: 26, ring: _tab == 1),
                 ),
               ],
             ),

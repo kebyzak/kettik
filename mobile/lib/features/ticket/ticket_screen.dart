@@ -8,22 +8,23 @@ import 'package:kettik/core/ui/parts.dart';
 import 'package:kettik/core/ui/pitch_view.dart';
 import 'package:kettik/core/ui/theme.dart';
 
-/// Game day: when, where, your number, who is coming.
 class TicketScreen extends StatelessWidget {
   const TicketScreen({super.key, required this.gameId});
+
   final String gameId;
 
   @override
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
     final now = scope.now();
-    final me = scope.store.me;
+    final me = scope.me;
     final g = scope.store.game(gameId, now);
     final mine = g.numberOf(me);
     final untilStart = g.start.difference(now);
     final names = [
       for (final p in g.places)
-        if (p case PaidPlace(:final player)) player.id == me.id ? 'вы' : player.name,
+        if (p case PaidPlace(:final player))
+          player.id == me?.id ? 'вы' : player.name,
     ];
     return Scaffold(
       body: SafeArea(
@@ -32,9 +33,15 @@ class TicketScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                Transform.translate(offset: const Offset(-12, 0), child: const Back()),
+                Transform.translate(
+                  offset: const Offset(-12, 0),
+                  child: const Back(),
+                ),
                 const Spacer(),
-                Text('Игра состоится', style: body(13, weight: 600, color: K.pitchText)),
+                Text(
+                  'Игра состоится',
+                  style: body(13, weight: 600, color: K.pitchText),
+                ),
               ],
             ),
             ClipRRect(
@@ -47,7 +54,10 @@ class TicketScreen extends StatelessWidget {
                     ColoredBox(
                       color: K.pitch,
                       child: PitchView(
-                        kinds: [for (final k in kindsOf(g, me)) k == SpotKind.mine ? k : SpotKind.paid],
+                        kinds: [
+                          for (final k in kindsOf(g, me))
+                            k == SpotKind.mine ? k : SpotKind.paid,
+                        ],
                         grass: false,
                         numbers: false,
                         overlay: Column(
@@ -70,13 +80,25 @@ class TicketScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(g.venue.name, style: display(15)),
-                          Text('${g.venue.address} · до ${hm(g.end)}', style: body(15, color: K.ink2)),
+                          Text(
+                            '${g.venue.address} · до ${hm(g.end)}',
+                            style: body(15, color: K.ink2),
+                          ),
                           const SizedBox(height: 16),
                           Row(
                             children: [
-                              _Cell('Номер', mine == null ? '—' : '$mine', big: true),
+                              _Cell(
+                                'Номер',
+                                mine == null ? '—' : '$mine',
+                                big: true,
+                              ),
                               _Cell('Формат', g.format),
-                              _Cell('Оплачено', mine == null ? '—' : formatTenge(g.shareOf(mine))),
+                              _Cell(
+                                'Оплачено',
+                                mine == null
+                                    ? '—'
+                                    : formatTenge(g.shareOf(mine)),
+                              ),
                             ],
                           ),
                         ],
@@ -87,7 +109,10 @@ class TicketScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Text('Состав · ${g.paidCount}', style: display(13, weight: 500, color: K.ink2)),
+            Text(
+              'Состав · ${g.paidCount}',
+              style: display(13, weight: 500, color: K.ink2),
+            ),
             const SizedBox(height: 8),
             Text(names.join(' · '), style: body(15).copyWith(height: 1.7)),
           ],
@@ -99,9 +124,11 @@ class TicketScreen extends StatelessWidget {
 
 class _Cell extends StatelessWidget {
   const _Cell(this.label, this.value, {this.big = false});
+
   final String label;
   final String value;
   final bool big;
+
   @override
   Widget build(BuildContext context) => Expanded(
     child: Column(

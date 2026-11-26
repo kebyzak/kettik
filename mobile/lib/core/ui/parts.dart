@@ -9,19 +9,18 @@ import 'package:kettik/core/ui/theme.dart';
 
 enum SpotKind { paid, held, free, mine }
 
-SpotKind kindOf(Place place, Player me) => switch (place) {
+SpotKind kindOf(Place place, Player? me) => switch (place) {
   FreePlace() => SpotKind.free,
   HeldPlace(:final player) =>
-    player.id == me.id ? SpotKind.mine : SpotKind.held,
+    player.id == me?.id ? SpotKind.mine : SpotKind.held,
   PaidPlace(:final player) =>
-    player.id == me.id ? SpotKind.mine : SpotKind.paid,
+    player.id == me?.id ? SpotKind.mine : SpotKind.paid,
 };
 
-List<SpotKind> kindsOf(Game g, Player me) => [
+List<SpotKind> kindsOf(Game g, Player? me) => [
   for (final p in g.places) kindOf(p, me),
 ];
 
-/// Rebuilds every second, for countdowns.
 class EverySecond extends StatefulWidget {
   const EverySecond({super.key, required this.builder});
 

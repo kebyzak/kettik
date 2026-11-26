@@ -106,7 +106,8 @@ class Game {
 
   Tenge shareOf(int number) => splitRent(rent, size)[number - 1];
 
-  int? numberOf(Player player) {
+  int? numberOf(Player? player) {
+    if (player == null) return null;
     for (var i = 0; i < size; i++) {
       final p = places[i];
       if ((p is HeldPlace && p.player.id == player.id) ||

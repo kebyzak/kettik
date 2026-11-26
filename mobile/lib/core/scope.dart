@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
 
 import 'package:kettik/core/data/games_store.dart';
+import 'package:kettik/core/data/session.dart';
+import 'package:kettik/core/domain/game.dart';
 
 class AppScope extends InheritedWidget {
   const AppScope({
     super.key,
     required this.store,
+    required this.session,
+    required this.me,
     required this.now,
     required super.child,
   });
 
   final GamesStore store;
+  final Session session;
+  final Player? me;
   final DateTime Function() now;
 
   static AppScope of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<AppScope>()!;
 
   @override
-  bool updateShouldNotify(AppScope old) => old.store != store || old.now != now;
+  bool updateShouldNotify(AppScope old) =>
+      old.store != store ||
+      old.session != session ||
+      old.me != me ||
+      old.now != now;
 }
 
 Future<void> open(BuildContext context, Widget screen) =>

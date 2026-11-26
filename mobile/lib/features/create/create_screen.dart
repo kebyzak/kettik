@@ -7,9 +7,9 @@ import 'package:kettik/core/scope.dart';
 import 'package:kettik/core/ui/format.dart';
 import 'package:kettik/core/ui/parts.dart';
 import 'package:kettik/core/ui/theme.dart';
+import 'package:kettik/features/auth/sign_in.dart';
 import 'package:kettik/features/booking/hold_screen.dart';
 
-// shortcut: one venue, a fixed tariff and today's slots; real availability and pricing come from the venue's calendar.
 const _hourly = Tenge(33000);
 const _slots = [(20, 0), (21, 0), (21, 30), (22, 0), (22, 30), (23, 0)];
 const _bookedSlots = {(21, 0), (23, 0)};
@@ -46,10 +46,13 @@ class _CreateScreenState extends State<CreateScreen> {
       !_bookedSlots.contains(s) &&
       !_at(now, s).subtract(fundingCloseBeforeStart).isBefore(now);
 
-  void _create(DateTime now, (int, int) slot) {
-    final store = AppScope.of(context).store;
+  Future<void> _create(DateTime now, (int, int) slot) async {
+    final me = await signIn(context);
+    if (me == null || !mounted) return;
+    final scope = AppScope.of(context);
     final start = _at(now, slot);
-    final id = store.create(
+    final id = scope.store.create(
+      organizer: me,
       venue: nis,
       start: start,
       end: start.add(Duration(minutes: _durations[_duration].$1)),

@@ -39,7 +39,7 @@ class _ConfirmedScreenState extends State<ConfirmedScreen>
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
     final g = scope.store.game(widget.gameId, scope.now());
-    final me = scope.store.me;
+    final me = scope.me;
     double pop(int i) => Curves.easeOutBack.transform(
       ((_c.value * 1600 - 200 - i * 60) / 320).clamp(0.0, 1.0),
     );

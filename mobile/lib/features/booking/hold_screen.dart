@@ -45,10 +45,10 @@ class HoldScreen extends StatelessWidget {
       builder: (context, _) => EverySecond(
         builder: (context) {
           final now = scope.now();
-          final me = scope.store.me;
+          final me = scope.me;
           final g = scope.store.game(gameId, now);
           final place = g.placeAt(number);
-          final held = place is HeldPlace && place.player.id == me.id;
+          final held = place is HeldPlace && place.player.id == me?.id;
           return Scaffold(
             body: SafeArea(
               child: ListView(
