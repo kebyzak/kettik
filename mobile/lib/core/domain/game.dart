@@ -1,4 +1,4 @@
-import 'money.dart';
+import 'package:kettik/core/domain/money.dart';
 
 /// Rules mirror docs/booking-mvp.md. The server is the authority; the client
 /// uses the same rules to render state and to run the demo without a backend.
@@ -103,9 +103,7 @@ class Game {
   /// This game as it stands at [now]: lapsed holds are free, an unfilled game
   /// past its deadline has expired.
   Game at(DateTime now) {
-    final current = [
-      for (final p in places) p is HeldPlace && !now.isBefore(p.until) ? const FreePlace() : p,
-    ];
+    final current = [for (final p in places) p is HeldPlace && !now.isBefore(p.until) ? const FreePlace() : p];
     final expired = status == GameStatus.funding && !now.isBefore(deadline);
     return _copy(places: current, status: expired ? GameStatus.expired : status);
   }
@@ -137,16 +135,16 @@ class Game {
   Game _replace(int number, Place place) => _copy(places: [...places]..[number - 1] = place);
 
   Game _copy({List<Place>? places, GameStatus? status}) => Game(
-        id: id,
-        venue: venue,
-        start: start,
-        end: end,
-        rent: rent,
-        format: format,
-        level: level,
-        organizerId: organizerId,
-        createdAt: createdAt,
-        places: places ?? this.places,
-        status: status ?? this.status,
-      );
+    id: id,
+    venue: venue,
+    start: start,
+    end: end,
+    rent: rent,
+    format: format,
+    level: level,
+    organizerId: organizerId,
+    createdAt: createdAt,
+    places: places ?? this.places,
+    status: status ?? this.status,
+  );
 }

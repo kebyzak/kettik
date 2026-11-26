@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'parts.dart';
-import 'pitch_geometry.dart';
-import 'theme.dart';
+import 'package:kettik/core/ui/parts.dart';
+import 'package:kettik/core/ui/pitch_geometry.dart';
+import 'package:kettik/core/ui/theme.dart';
 
 /// The isometric pitch with one numbered spot per place. Only for screens about
 /// one game; lists use [DotStrip].
@@ -36,13 +36,17 @@ class PitchView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AspectRatio(
-        aspectRatio: pitch.aspectRatio,
-        child: LayoutBuilder(builder: (context, box) {
-          final w = box.maxWidth, h = box.maxHeight;
-          final d = w * 0.074;
-          final spots = spotsOn(pitch, kinds.length);
-          return Stack(children: [
-            Positioned.fill(child: CustomPaint(painter: _PitchPainter(grass: grass))),
+    aspectRatio: pitch.aspectRatio,
+    child: LayoutBuilder(
+      builder: (context, box) {
+        final w = box.maxWidth, h = box.maxHeight;
+        final d = w * 0.074;
+        final spots = spotsOn(pitch, kinds.length);
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: CustomPaint(painter: _PitchPainter(grass: grass)),
+            ),
             if (overlay != null) Positioned(left: 20, top: 16, child: overlay!),
             for (var i = 0; i < spots.length; i++)
               Positioned(
@@ -59,9 +63,11 @@ class PitchView extends StatelessWidget {
                   ),
                 ),
               ),
-          ]);
-        }),
-      );
+          ],
+        );
+      },
+    ),
+  );
 }
 
 class _PitchPainter extends CustomPainter {
@@ -93,7 +99,13 @@ class _PitchPainter extends CustomPainter {
 }
 
 class _Spot extends StatelessWidget {
-  const _Spot({required this.number, required this.kind, required this.size, required this.selected, required this.pulse});
+  const _Spot({
+    required this.number,
+    required this.kind,
+    required this.size,
+    required this.selected,
+    required this.pulse,
+  });
   final int? number;
   final SpotKind kind;
   final double size;
@@ -102,26 +114,46 @@ class _Spot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = switch (kind) { SpotKind.paid => K.ink, SpotKind.mine => K.sheet, _ => K.sheet };
-    final label = number == null ? null : Center(child: Text('$number', style: display(size * 0.42, color: fg)));
+    final fg = switch (kind) {
+      SpotKind.paid => K.ink,
+      SpotKind.mine => K.sheet,
+      _ => K.sheet,
+    };
+    final label = number == null
+        ? null
+        : Center(
+            child: Text('$number', style: display(size * 0.42, color: fg)),
+          );
     final Widget spot = kind == SpotKind.free
         ? CustomPaint(painter: DashedCircle(K.sheet.withValues(alpha: 0.9), width: 2), child: label)
         : DecoratedBox(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: switch (kind) { SpotKind.paid => K.sheet, SpotKind.mine => K.ink, _ => null },
+              color: switch (kind) {
+                SpotKind.paid => K.sheet,
+                SpotKind.mine => K.ink,
+                _ => null,
+              },
               border: kind == SpotKind.held ? Border.all(color: K.sheet, width: 2.5) : null,
-              boxShadow: kind == SpotKind.paid ? const [BoxShadow(color: Color(0x4022302A), offset: Offset(0, 2))] : null,
+              boxShadow: kind == SpotKind.paid
+                  ? const [BoxShadow(color: Color(0x4022302A), offset: Offset(0, 2))]
+                  : null,
             ),
             child: label,
           );
     final framed = selected
         ? DecoratedBox(
-            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: K.ink, width: 2.5)),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: K.ink, width: 2.5),
+            ),
             child: Padding(padding: const EdgeInsets.all(1), child: spot),
           )
         : spot;
-    return SizedBox.square(dimension: size, child: pulse ? _Pulse(child: framed) : framed);
+    return SizedBox.square(
+      dimension: size,
+      child: pulse ? _Pulse(child: framed) : framed,
+    );
   }
 }
 
@@ -150,17 +182,22 @@ class _PulseState extends State<_Pulse> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
-        animation: _c,
-        child: widget.child,
-        builder: (context, child) {
-          final t = Curves.easeOut.transform(_c.value);
-          return DecoratedBox(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: K.ink.withValues(alpha: 0.35 * (1 - t)), spreadRadius: 8 * t)],
+    animation: _c,
+    child: widget.child,
+    builder: (context, child) {
+      final t = Curves.easeOut.transform(_c.value);
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: K.ink.withValues(alpha: 0.35 * (1 - t)),
+              spreadRadius: 8 * t,
             ),
-            child: child,
-          );
-        },
+          ],
+        ),
+        child: child,
       );
+    },
+  );
 }

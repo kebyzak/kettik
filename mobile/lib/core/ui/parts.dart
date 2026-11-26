@@ -4,16 +4,16 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../domain/game.dart';
-import 'theme.dart';
+import 'package:kettik/core/domain/game.dart';
+import 'package:kettik/core/ui/theme.dart';
 
 enum SpotKind { paid, held, free, mine }
 
 SpotKind kindOf(Place place, Player me) => switch (place) {
-      FreePlace() => SpotKind.free,
-      HeldPlace(:final player) => player.id == me.id ? SpotKind.mine : SpotKind.held,
-      PaidPlace(:final player) => player.id == me.id ? SpotKind.mine : SpotKind.paid,
-    };
+  FreePlace() => SpotKind.free,
+  HeldPlace(:final player) => player.id == me.id ? SpotKind.mine : SpotKind.held,
+  PaidPlace(:final player) => player.id == me.id ? SpotKind.mine : SpotKind.paid,
+};
 
 List<SpotKind> kindsOf(Game g, Player me) => [for (final p in g.places) kindOf(p, me)];
 
@@ -80,12 +80,17 @@ class PlaceChip extends StatelessWidget {
       SpotKind.held => (null, K.signal, Border.all(color: K.signal, width: 2)),
       SpotKind.free => (null, K.ink2, null),
     };
-    final label = Center(child: Text('$number', style: display(11, color: fg)));
+    final label = Center(
+      child: Text('$number', style: display(11, color: fg)),
+    );
     return SizedBox.square(
       dimension: size,
       child: kind == SpotKind.free
           ? CustomPaint(painter: const DashedCircle(K.dash), child: label)
-          : DecoratedBox(decoration: BoxDecoration(color: fill, shape: BoxShape.circle, border: border), child: label),
+          : DecoratedBox(
+              decoration: BoxDecoration(color: fill, shape: BoxShape.circle, border: border),
+              child: label,
+            ),
     );
   }
 }
@@ -101,20 +106,27 @@ class DotStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget dot(SpotKind k) => Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: switch (k) {
-              SpotKind.paid || SpotKind.mine => faded ? K.faded : K.pitch,
-              SpotKind.held => null,
-              SpotKind.free => K.line,
-            },
-            border: k == SpotKind.held ? Border.all(color: K.signal, width: 2) : null,
-          ),
-        );
-    final strip = Wrap(spacing: 3, runSpacing: 3, alignment: WrapAlignment.end, children: [for (final k in kinds) dot(k)]);
-    return ExcludeSemantics(child: maxWidth == null ? strip : SizedBox(width: maxWidth, child: strip));
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: switch (k) {
+          SpotKind.paid || SpotKind.mine => faded ? K.faded : K.pitch,
+          SpotKind.held => null,
+          SpotKind.free => K.line,
+        },
+        border: k == SpotKind.held ? Border.all(color: K.signal, width: 2) : null,
+      ),
+    );
+    final strip = Wrap(
+      spacing: 3,
+      runSpacing: 3,
+      alignment: WrapAlignment.end,
+      children: [for (final k in kinds) dot(k)],
+    );
+    return ExcludeSemantics(
+      child: maxWidth == null ? strip : SizedBox(width: maxWidth, child: strip),
+    );
   }
 }
 
@@ -157,11 +169,11 @@ class Wordmark extends StatelessWidget {
   final double height;
   @override
   Widget build(BuildContext context) => SvgPicture.asset(
-        'assets/brand/wordmark.svg',
-        height: height,
-        semanticsLabel: 'kettik',
-        colorFilter: const ColorFilter.mode(K.ink, BlendMode.srcIn),
-      );
+    'assets/brand/wordmark.svg',
+    height: height,
+    semanticsLabel: 'kettik',
+    colorFilter: const ColorFilter.mode(K.ink, BlendMode.srcIn),
+  );
 }
 
 class Back extends StatelessWidget {
@@ -171,29 +183,35 @@ class Back extends StatelessWidget {
   final VoidCallback? onPressed;
   @override
   Widget build(BuildContext context) => IconButton(
-        tooltip: tooltip,
-        icon: Icon(icon, size: 22, color: K.ink),
-        onPressed: onPressed ?? () => Navigator.of(context).maybePop(),
-      );
+    tooltip: tooltip,
+    icon: Icon(icon, size: 22, color: K.ink),
+    onPressed: onPressed ?? () => Navigator.of(context).maybePop(),
+  );
 }
 
 /// White card, radius 20: the only container in the system.
 class Sheet extends StatelessWidget {
-  const Sheet({super.key, required this.child, this.padding = const EdgeInsets.all(16), this.color = K.sheet, this.ring});
+  const Sheet({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.color = K.sheet,
+    this.ring,
+  });
   final Widget child;
   final EdgeInsets padding;
   final Color color;
   final Color? ring;
   @override
   Widget build(BuildContext context) => Container(
-        padding: padding,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
-          border: ring == null ? null : Border.all(color: ring!, width: 2),
-        ),
-        child: child,
-      );
+    padding: padding,
+    decoration: BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(20),
+      border: ring == null ? null : Border.all(color: ring!, width: 2),
+    ),
+    child: child,
+  );
 }
 
 /// A rule line with a check (kept promise) or an info mark (caveat).
@@ -203,11 +221,38 @@ class RuleLine extends StatelessWidget {
   final bool caveat;
   @override
   Widget build(BuildContext context) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(caveat ? Icons.info_outline_rounded : Icons.check_rounded, size: 18, color: caveat ? K.ink2 : K.pitchText),
-          const SizedBox(width: 8),
-          Expanded(child: Text(text, style: body(13, color: caveat ? K.ink2 : K.ink))),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Icon(caveat ? Icons.info_outline_rounded : Icons.check_rounded, size: 18, color: caveat ? K.ink2 : K.pitchText),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(text, style: body(13, color: caveat ? K.ink2 : K.ink)),
+      ),
+    ],
+  );
+}
+
+class Avatar extends StatelessWidget {
+  const Avatar(this.name, {super.key, this.size = 56, this.ring = false});
+  final String name;
+  final double size;
+  final bool ring;
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = name.split(' ').where((w) => w.isNotEmpty).take(2).map((w) => w[0]).join();
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: K.pitch,
+        shape: BoxShape.circle,
+        boxShadow: ring
+            ? const [BoxShadow(color: K.sheet, spreadRadius: 2), BoxShadow(color: K.ink, spreadRadius: 4)]
+            : null,
+      ),
+      child: ExcludeSemantics(child: Text(initials, style: body(size * 0.38, weight: 600))),
+    );
+  }
 }

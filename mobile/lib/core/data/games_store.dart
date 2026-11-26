@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
-import '../domain/game.dart';
-import '../domain/money.dart';
+import 'package:kettik/core/domain/game.dart';
+import 'package:kettik/core/domain/money.dart';
 
 /// The one place the app changes games. Screens read through [game] and
 /// [games], which apply the clock, and write through the methods below.
@@ -15,13 +15,14 @@ class GamesStore extends ChangeNotifier {
 
   Game game(String id, DateTime now) => _games[id]!.at(now);
 
-  List<Game> games(DateTime now) => [for (final g in _games.values) g.at(now)]..sort((a, b) => a.start.compareTo(b.start));
+  List<Game> games(DateTime now) =>
+      [for (final g in _games.values) g.at(now)]..sort((a, b) => a.start.compareTo(b.start));
 
   /// Places [me] holds but has not paid for yet, as (game, number).
   List<(Game, int)> myHolds(DateTime now) => [
-        for (final g in games(now))
-          if (g.numberOf(me) case final n? when g.placeAt(n) is HeldPlace) (g, n),
-      ];
+    for (final g in games(now))
+      if (g.numberOf(me) case final n? when g.placeAt(n) is HeldPlace) (g, n),
+  ];
 
   /// Throws [BookingRejected] when the place is gone.
   void hold(String id, int number, DateTime now) => _write(id, _games[id]!.hold(number, me, now));
@@ -43,8 +44,16 @@ class GamesStore extends ChangeNotifier {
   }) {
     final id = 'new-${++_created}';
     final game = Game(
-      id: id, venue: venue, start: start, end: end, rent: rent, format: format, level: level,
-      organizerId: me.id, createdAt: now, places: List.filled(size, const FreePlace()),
+      id: id,
+      venue: venue,
+      start: start,
+      end: end,
+      rent: rent,
+      format: format,
+      level: level,
+      organizerId: me.id,
+      createdAt: now,
+      places: List.filled(size, const FreePlace()),
     );
     _games[id] = game.hold(1, me, now);
     notifyListeners();

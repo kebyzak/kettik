@@ -19,26 +19,27 @@ abstract final class K {
 
 // The bundled fonts are variable, so the weight is set on the 'wght' axis too.
 TextStyle _style(String family, double size, int weight, Color color, double height, bool tabular) => TextStyle(
-      fontFamily: family,
-      fontSize: size,
-      fontWeight: FontWeight.values[weight ~/ 100 - 1],
-      fontVariations: [FontVariation('wght', weight.toDouble())],
-      fontFeatures: tabular ? const [FontFeature.tabularFigures()] : null,
-      color: color,
-      height: height,
-    );
+  fontFamily: family,
+  fontSize: size,
+  fontWeight: FontWeight.values[weight ~/ 100 - 1],
+  fontVariations: [FontVariation('wght', weight.toDouble())],
+  fontFeatures: tabular ? const [FontFeature.tabularFigures()] : null,
+  color: color,
+  height: height,
+);
 
 /// Montserrat: numbers, times, prices and headings.
 TextStyle display(double size, {int weight = 700, Color color = K.ink}) =>
     _style('Montserrat', size, weight, color, 1.2, true);
 
 /// Onest: everything people read.
-TextStyle body(double size, {int weight = 400, Color color = K.ink}) => _style('Onest', size, weight, color, 1.4, false);
+TextStyle body(double size, {int weight = 400, Color color = K.ink}) =>
+    _style('Onest', size, weight, color, 1.4, false);
 
 ThemeData kettikTheme() => ThemeData(
-      scaffoldBackgroundColor: K.chalk,
-      fontFamily: 'Onest',
-      colorScheme: ColorScheme.fromSeed(seedColor: K.pitch, primary: K.ink, surface: K.chalk),
-      textTheme: TextTheme(bodyMedium: body(15)),
-      splashFactory: InkSparkle.splashFactory,
-    );
+  scaffoldBackgroundColor: K.chalk,
+  fontFamily: 'Onest',
+  colorScheme: ColorScheme.fromSeed(seedColor: K.pitch, primary: K.ink, surface: K.chalk),
+  textTheme: TextTheme(bodyMedium: body(15)),
+  splashFactory: InkSparkle.splashFactory,
+);
