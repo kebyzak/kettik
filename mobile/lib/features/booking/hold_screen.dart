@@ -17,13 +17,15 @@ class HoldScreen extends StatelessWidget {
   final String gameId;
   final int number;
 
-  void _pay(BuildContext context) {
+  Future<void> _pay(BuildContext context) async {
     final scope = AppScope.of(context);
     try {
-      scope.store.pay(gameId, number, scope.now());
-    } on BookingRejected {
+      await scope.store.pay(gameId, number);
+    } on BookingRejected catch (e) {
+      if (context.mounted) tell(context, e.reason);
       return;
     }
+    if (!context.mounted) return;
     final confirmed =
         scope.store.game(gameId, scope.now()).status == GameStatus.confirmed;
     landOn(
@@ -32,9 +34,14 @@ class HoldScreen extends StatelessWidget {
     );
   }
 
-  void _release(BuildContext context) {
-    AppScope.of(context).store.release(gameId, number);
-    Navigator.of(context).pop();
+  Future<void> _release(BuildContext context) async {
+    try {
+      await AppScope.of(context).store.release(gameId, number);
+    } on BookingRejected catch (e) {
+      if (context.mounted) tell(context, e.reason);
+      return;
+    }
+    if (context.mounted) Navigator.of(context).pop();
   }
 
   @override

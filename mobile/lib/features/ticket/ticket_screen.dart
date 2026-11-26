@@ -146,7 +146,7 @@ class TicketScreen extends StatelessWidget {
               PillButton(
                 context.l10n.stayInGame,
                 style: PillStyle.outline,
-                onPressed: () => scope.store.stay(gameId, mine),
+                onPressed: () => _try(context, scope.store.stay(gameId, mine)),
               ),
             ] else if (canLeave) ...[
               RuleLine(refundAfterConfirm(context.l10n, g), caveat: true),
@@ -154,13 +154,8 @@ class TicketScreen extends StatelessWidget {
                 context.l10n.cantCome,
                 style: PillStyle.quiet,
                 height: 44,
-                onPressed: () {
-                  try {
-                    scope.store.leave(gameId, mine!, scope.now());
-                  } on BookingRejected {
-                    return; // the cutoff passed while the screen was open
-                  }
-                },
+                onPressed: () =>
+                    _try(context, scope.store.leave(gameId, mine!)),
               ),
             ],
           ],
@@ -187,4 +182,12 @@ class _Cell extends StatelessWidget {
       ],
     ),
   );
+}
+
+Future<void> _try(BuildContext context, Future<void> request) async {
+  try {
+    await request;
+  } on BookingRejected catch (e) {
+    if (context.mounted) tell(context, e.reason);
+  }
 }

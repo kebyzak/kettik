@@ -27,14 +27,16 @@ class _GameScreenState extends State<GameScreen> {
   Future<void> _take(int number) async {
     final me = await signIn(context);
     if (me == null || !mounted) return;
-    final scope = AppScope.of(context);
+    final store = AppScope.of(context).store;
     try {
-      scope.store.hold(widget.gameId, number, me, scope.now());
+      await store.hold(widget.gameId, number);
     } on BookingRejected catch (e) {
-      _explain(e.reason);
+      if (mounted) _explain(e.reason);
       return;
     }
-    open(context, HoldScreen(gameId: widget.gameId, number: number));
+    if (mounted) {
+      open(context, HoldScreen(gameId: widget.gameId, number: number));
+    }
   }
 
   void _explain(Rejection reason) => showModalBottomSheet<void>(
@@ -97,13 +99,13 @@ class _GameScreenState extends State<GameScreen> {
               const SizedBox(height: 20),
               PillButton(
                 organizer ? context.l10n.cancelGame : context.l10n.leave,
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(sheet).pop();
-                  final scope = AppScope.of(context);
                   try {
-                    scope.store.leave(widget.gameId, number, scope.now());
-                  } on BookingRejected {
-                    return; // the game closed meanwhile; the screen shows its status
+                    await AppScope.of(context).store
+                        .leave(widget.gameId, number);
+                  } on BookingRejected catch (e) {
+                    if (mounted) tell(context, e.reason);
                   }
                 },
               ),

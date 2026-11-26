@@ -28,6 +28,10 @@ String rejectionText(AppLocalizations l, Rejection r) => switch (r) {
   Rejection.holdExpired => l.rejectHoldExpired,
   Rejection.notHeld => l.rejectNotHeld,
   Rejection.cannotLeave => l.rejectCannotLeave,
+  Rejection.slotTaken => l.rejectSlotTaken,
+  Rejection.tooLate => l.rejectTooLate,
+  Rejection.offline => l.offline,
+  Rejection.failed => l.tryAgain,
 };
 
 String refundPromise(AppLocalizations l, Game g, Tenge share) =>
@@ -43,6 +47,9 @@ String authRejectionText(AppLocalizations l, AuthRejected e) =>
       AuthRejection.codeBurned => l.authCodeBurned,
       AuthRejection.codeExpired => l.authCodeExpired,
       AuthRejection.badName => l.authBadName,
+      AuthRejection.tooMany => l.authTooMany,
+      AuthRejection.offline => l.offline,
+      AuthRejection.failed => l.tryAgain,
     };
 
 String levelName(AppLocalizations l, Level level) => switch (level) {

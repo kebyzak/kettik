@@ -232,6 +232,42 @@ abstract class AppLocalizations {
   /// **'Выйти с возвратом уже нельзя.'**
   String get rejectCannotLeave;
 
+  /// No description provided for @rejectSlotTaken.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это время уже заняли. Выберите другое.'**
+  String get rejectSlotTaken;
+
+  /// No description provided for @rejectTooLate.
+  ///
+  /// In ru, this message translates to:
+  /// **'На это время уже не успеть собрать игру.'**
+  String get rejectTooLate;
+
+  /// No description provided for @offline.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет связи с сервером. Проверьте интернет.'**
+  String get offline;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не получилось. Попробуйте ещё раз.'**
+  String get tryAgain;
+
+  /// No description provided for @tryAgainShort.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторить'**
+  String get tryAgainShort;
+
+  /// No description provided for @authTooMany.
+  ///
+  /// In ru, this message translates to:
+  /// **'Слишком много запросов. Попробуйте через час.'**
+  String get authTooMany;
+
   /// No description provided for @refundPromise.
   ///
   /// In ru, this message translates to:
@@ -303,12 +339,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Письма нет? Проверьте «Спам» и «Промоакции».'**
   String get codeNoEmail;
-
-  /// No description provided for @codeDemo.
-  ///
-  /// In ru, this message translates to:
-  /// **'Демо: код {code}'**
-  String codeDemo(String code);
 
   /// No description provided for @emailTitle.
   ///

@@ -2,7 +2,16 @@ const codeLife = Duration(minutes: 10);
 const resendAfter = Duration(seconds: 60);
 const codeAttempts = 5;
 
-enum AuthRejection { badEmail, wrongCode, codeBurned, codeExpired, badName }
+enum AuthRejection {
+  badEmail,
+  wrongCode,
+  codeBurned,
+  codeExpired,
+  badName,
+  tooMany,
+  offline,
+  failed,
+}
 
 class AuthRejected implements Exception {
   const AuthRejected(this.reason, {this.attemptsLeft = 0});

@@ -29,9 +29,10 @@ class _EmailScreenState extends State<EmailScreen> {
     super.dispose();
   }
 
-  void _send() {
+  Future<void> _send() async {
     try {
-      final sent = widget.session.sendCode(_email.text, DateTime.now());
+      final sent = await widget.session.sendCode(_email.text);
+      if (!mounted) return;
       open(
         context,
         CodeScreen(
@@ -41,7 +42,7 @@ class _EmailScreenState extends State<EmailScreen> {
         ),
       );
     } on AuthRejected catch (e) {
-      setState(() => _error = authRejectionText(context.l10n, e));
+      if (mounted) setState(() => _error = authRejectionText(context.l10n, e));
     }
   }
 

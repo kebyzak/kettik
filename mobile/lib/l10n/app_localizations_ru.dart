@@ -80,6 +80,24 @@ class AppLocalizationsRu extends AppLocalizations {
   String get rejectCannotLeave => 'Выйти с возвратом уже нельзя.';
 
   @override
+  String get rejectSlotTaken => 'Это время уже заняли. Выберите другое.';
+
+  @override
+  String get rejectTooLate => 'На это время уже не успеть собрать игру.';
+
+  @override
+  String get offline => 'Нет связи с сервером. Проверьте интернет.';
+
+  @override
+  String get tryAgain => 'Не получилось. Попробуйте ещё раз.';
+
+  @override
+  String get tryAgainShort => 'Повторить';
+
+  @override
+  String get authTooMany => 'Слишком много запросов. Попробуйте через час.';
+
+  @override
   String refundPromise(String time, String amount) {
     return 'Не соберёмся к $time — вернём $amount полностью.';
   }
@@ -131,11 +149,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get codeNoEmail => 'Письма нет? Проверьте «Спам» и «Промоакции».';
-
-  @override
-  String codeDemo(String code) {
-    return 'Демо: код $code';
-  }
 
   @override
   String get emailTitle => 'Вход по почте';

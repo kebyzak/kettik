@@ -64,6 +64,10 @@ enum Rejection {
   holdExpired,
   notHeld,
   cannotLeave,
+  slotTaken,
+  tooLate,
+  offline,
+  failed,
 }
 
 class BookingRejected implements Exception {

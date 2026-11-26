@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-import 'package:kettik/core/data/demo_data.dart';
+import 'package:kettik/core/data/games_store.dart';
 import 'package:kettik/core/domain/game.dart';
 import 'package:kettik/core/domain/money.dart';
 import 'package:kettik/core/scope.dart';
@@ -11,9 +11,7 @@ import 'package:kettik/features/auth/sign_in.dart';
 import 'package:kettik/features/booking/hold_screen.dart';
 import 'package:kettik/core/ui/words.dart';
 
-const _hourly = Tenge(33000);
 const _slots = [(20, 0), (21, 0), (21, 30), (22, 0), (22, 30), (23, 0)];
-const _bookedSlots = {(21, 0), (23, 0)};
 const _durations = [60, 90, 120];
 const minSize = 6;
 const maxSize = 22;
@@ -32,30 +30,74 @@ class _CreateScreenState extends State<CreateScreen> {
   var _duration = 1;
   var _size = 15;
   var _level = 0;
+  Pitch? _pitch;
+  var _busy = <(DateTime, DateTime)>[];
+  Rejection? _loadFailed;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    // Called from initState, so read the scope without depending on it.
+    final store = context.getInheritedWidgetOfExactType<AppScope>()!.store;
+    final now = DateTime.now();
+    final day = DateTime(now.year, now.month, now.day);
+    try {
+      final pitch = _pitch ?? await store.pitch();
+      final busy = await store.busy(
+        pitch.fieldId,
+        day,
+        day.add(const Duration(days: 1, hours: 3)),
+      );
+      if (!mounted) return;
+      setState(() {
+        _pitch = pitch;
+        _busy = busy;
+        _loadFailed = null;
+      });
+    } on BookingRejected catch (e) {
+      if (mounted) setState(() => _loadFailed = e.reason);
+    }
+  }
 
   DateTime _at(DateTime now, (int, int) s) =>
       DateTime(now.year, now.month, now.day, s.$1, s.$2);
 
-  bool _open(DateTime now, (int, int) s) =>
-      !_bookedSlots.contains(s) &&
-      !_at(now, s).subtract(fundingCloseBeforeStart).isBefore(now);
+  Duration get _length => Duration(minutes: _durations[_duration]);
+
+  bool _open(DateTime now, (int, int) s) {
+    final start = _at(now, s);
+    final end = start.add(_length);
+    return !_busy.any((b) => b.$1.isBefore(end) && start.isBefore(b.$2)) &&
+        !start.subtract(fundingCloseBeforeStart).isBefore(now);
+  }
 
   Future<void> _create(DateTime now, (int, int) slot) async {
     final me = await signIn(context);
     if (me == null || !mounted) return;
-    final scope = AppScope.of(context);
+    final store = AppScope.of(context).store;
     final start = _at(now, slot);
-    final id = scope.store.create(
-      organizer: me,
-      venue: nis,
-      start: start,
-      end: start.add(Duration(minutes: _durations[_duration])),
-      rent: _rent,
-      size: _size,
-      teams: _teamsFor(_size),
-      level: Level.values[_level],
-      now: now,
-    );
+    final String id;
+    try {
+      id = await store.create(
+        fieldId: _pitch!.fieldId,
+        start: start,
+        end: start.add(_length),
+        size: _size,
+        teams: _teamsFor(_size),
+        level: Level.values[_level],
+      );
+    } on BookingRejected catch (e) {
+      if (!mounted) return;
+      tell(context, e.reason);
+      setState(() => _slot = null);
+      _load();
+      return;
+    }
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => HoldScreen(gameId: id, number: 1),
@@ -63,12 +105,16 @@ class _CreateScreenState extends State<CreateScreen> {
     );
   }
 
-  Tenge get _rent => Tenge(_hourly.value * _durations[_duration] ~/ 60);
+  Tenge get _rent => Tenge(_pitch!.hourly.value * _durations[_duration] ~/ 60);
 
   @override
   Widget build(BuildContext context) {
     final now = AppScope.of(context).now();
-    final slot = _slot ?? _slots.where((s) => _open(now, s)).firstOrNull;
+    final pitch = _pitch;
+    if (pitch == null) return _Loading(failed: _loadFailed, retry: _load);
+    final slot = _slot != null && _open(now, _slot!)
+        ? _slot
+        : _slots.where((s) => _open(now, s)).firstOrNull;
     final shares = splitRent(_rent, _size);
     final perPlayer = shares.first == shares.last
         ? formatTenge(shares.last)
@@ -97,11 +143,11 @@ class _CreateScreenState extends State<CreateScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    context.l10n.pitchOne(nis.name),
+                    context.l10n.pitchOne(pitch.venue.name),
                     style: body(15, weight: 600),
                   ),
                   Text(
-                    context.l10n.artificialTurf(nis.address),
+                    context.l10n.artificialTurf(pitch.venue.address),
                     style: body(13, color: K.ink2),
                   ),
                 ],
@@ -283,6 +329,47 @@ class _CreateScreenState extends State<CreateScreen> {
       ),
     );
   }
+}
+
+class _Loading extends StatelessWidget {
+  const _Loading({required this.failed, required this.retry});
+
+  final Rejection? failed;
+  final VoidCallback retry;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(context.l10n.createGame, style: display(22)),
+                const Spacer(),
+                Back(tooltip: context.l10n.close, icon: Icons.close_rounded),
+              ],
+            ),
+            const Spacer(),
+            Center(
+              child: failed == null
+                  ? const CircularProgressIndicator(color: K.ink)
+                  : Text(
+                      rejectionText(context.l10n, failed!),
+                      textAlign: TextAlign.center,
+                      style: body(15, color: K.ink2),
+                    ),
+            ),
+            const Spacer(),
+            if (failed != null)
+              PillButton(context.l10n.tryAgainShort, onPressed: retry),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _Label extends StatelessWidget {

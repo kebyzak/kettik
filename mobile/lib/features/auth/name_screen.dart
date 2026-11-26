@@ -26,11 +26,11 @@ class _NameScreenState extends State<NameScreen> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     try {
-      widget.session.register(_name.text);
+      await widget.session.register(_name.text);
     } on AuthRejected catch (e) {
-      setState(() => _error = authRejectionText(context.l10n, e));
+      if (mounted) setState(() => _error = authRejectionText(context.l10n, e));
     }
   }
 

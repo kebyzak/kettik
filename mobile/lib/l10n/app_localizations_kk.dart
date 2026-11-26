@@ -80,6 +80,24 @@ class AppLocalizationsKk extends AppLocalizations {
   String get rejectCannotLeave => 'Енді ақшаны қайтарып шығу мүмкін емес.';
 
   @override
+  String get rejectSlotTaken => 'Бұл уақыт бос емес. Басқасын таңдаңыз.';
+
+  @override
+  String get rejectTooLate => 'Бұл уақытқа ойын жинауға үлгермейміз.';
+
+  @override
+  String get offline => 'Сервермен байланыс жоқ. Интернетті тексеріңіз.';
+
+  @override
+  String get tryAgain => 'Болмады. Қайталап көріңіз.';
+
+  @override
+  String get tryAgainShort => 'Қайталау';
+
+  @override
+  String get authTooMany => 'Сұраулар тым көп. Бір сағаттан кейін көріңіз.';
+
+  @override
   String refundPromise(String time, String amount) {
     return '$time дейін жиналмасақ, $amount толық қайтарамыз.';
   }
@@ -125,11 +143,6 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get codeNoEmail =>
       'Хат келмеді ме? «Спам» және «Промоакциялар» қалталарын тексеріңіз.';
-
-  @override
-  String codeDemo(String code) {
-    return 'Демо: код $code';
-  }
 
   @override
   String get emailTitle => 'Поштамен кіру';

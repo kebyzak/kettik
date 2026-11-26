@@ -81,6 +81,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rejectCannotLeave => 'You can no longer leave with a refund.';
 
   @override
+  String get rejectSlotTaken => 'That time is taken. Pick another.';
+
+  @override
+  String get rejectTooLate => 'Too late to fill a game at that time.';
+
+  @override
+  String get offline => 'Can\'t reach the server. Check your connection.';
+
+  @override
+  String get tryAgain => 'Something went wrong. Try again.';
+
+  @override
+  String get tryAgainShort => 'Retry';
+
+  @override
+  String get authTooMany => 'Too many requests. Try again in an hour.';
+
+  @override
   String refundPromise(String time, String amount) {
     return 'If we\'re not full by $time, you get $amount back in full.';
   }
@@ -131,11 +149,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get codeNoEmail => 'No email? Check Spam and Promotions.';
-
-  @override
-  String codeDemo(String code) {
-    return 'Demo: code $code';
-  }
 
   @override
   String get emailTitle => 'Sign in with email';

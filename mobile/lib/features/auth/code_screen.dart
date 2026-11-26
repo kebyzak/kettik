@@ -37,9 +37,10 @@ class _CodeScreenState extends State<CodeScreen> {
     super.dispose();
   }
 
-  void _check(String code) {
+  Future<void> _check(String code) async {
     try {
-      if (!widget.session.verify(code, DateTime.now())) {
+      final signedIn = await widget.session.verify(code);
+      if (!signedIn && mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute<void>(
             builder: (_) => NameScreen(session: widget.session),
@@ -47,18 +48,24 @@ class _CodeScreenState extends State<CodeScreen> {
         );
       }
     } on AuthRejected catch (e) {
+      if (!mounted) return;
       _code.clear();
       setState(() => _error = authRejectionText(context.l10n, e));
     }
   }
 
-  void _resend() {
-    final sent = widget.session.sendCode(widget.email, DateTime.now());
-    _code.clear();
-    setState(() {
-      _resendAt = sent.resendAt;
-      _error = null;
-    });
+  Future<void> _resend() async {
+    try {
+      final sent = await widget.session.sendCode(widget.email);
+      if (!mounted) return;
+      _code.clear();
+      setState(() {
+        _resendAt = sent.resendAt;
+        _error = null;
+      });
+    } on AuthRejected catch (e) {
+      if (mounted) setState(() => _error = authRejectionText(context.l10n, e));
+    }
   }
 
   @override
@@ -104,8 +111,6 @@ class _CodeScreenState extends State<CodeScreen> {
         ),
         const SizedBox(height: 8),
         RuleLine(context.l10n.codeNoEmail, caveat: true),
-        const SizedBox(height: 8),
-        RuleLine(context.l10n.codeDemo(Session.demoCode), caveat: true),
       ],
     ),
   );
