@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:kettik/core/data/session.dart';
 import 'package:kettik/core/domain/auth.dart';
@@ -41,15 +41,15 @@ class _EmailScreenState extends State<EmailScreen> {
         ),
       );
     } on AuthRejected catch (e) {
-      setState(() => _error = authRejectionText(e));
+      setState(() => _error = authRejectionText(context.l10n, e));
     }
   }
 
   @override
   Widget build(BuildContext context) => AuthPage(
-    leading: const Back(icon: Icons.close_rounded, tooltip: 'Закрыть'),
-    title: 'Вход по почте',
-    lead: 'Пришлём код на почту. Если аккаунта ещё нет, создадим его — нужно только имя.',
+    leading: Back(icon: Icons.close_rounded, tooltip: context.l10n.close),
+    title: context.l10n.emailTitle,
+    lead: context.l10n.emailLead,
     field: TextField(
       controller: _email,
       keyboardType: TextInputType.emailAddress,
@@ -62,7 +62,7 @@ class _EmailScreenState extends State<EmailScreen> {
       onSubmitted: (_) => _send(),
     ),
     action: PillButton(
-      'Получить код',
+      context.l10n.emailGetCode,
       onPressed: _email.text.trim().isEmpty ? null : _send,
     ),
   );

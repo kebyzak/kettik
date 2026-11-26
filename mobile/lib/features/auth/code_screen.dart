@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import 'package:kettik/core/data/session.dart';
@@ -48,7 +48,7 @@ class _CodeScreenState extends State<CodeScreen> {
       }
     } on AuthRejected catch (e) {
       _code.clear();
-      setState(() => _error = authRejectionText(e));
+      setState(() => _error = authRejectionText(context.l10n, e));
     }
   }
 
@@ -63,9 +63,8 @@ class _CodeScreenState extends State<CodeScreen> {
 
   @override
   Widget build(BuildContext context) => AuthPage(
-    title: 'Код из письма',
-    lead:
-        'Отправили на ${widget.email}. Код действует ${codeLife.inMinutes} минут.',
+    title: context.l10n.codeTitle,
+    lead: context.l10n.codeLead(widget.email, codeLife.inMinutes),
     field: TextField(
       controller: _code,
       autofocus: true,
@@ -91,12 +90,12 @@ class _CodeScreenState extends State<CodeScreen> {
                 ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Text(
-                      'Новый код через ${countdown(left)}',
+                      context.l10n.codeResendIn(countdown(left)),
                       style: body(15, color: K.ink2),
                     ),
                   )
                 : PillButton(
-                    'Прислать новый код',
+                    context.l10n.codeResend,
                     style: PillStyle.quiet,
                     height: 48,
                     onPressed: _resend,
@@ -104,12 +103,9 @@ class _CodeScreenState extends State<CodeScreen> {
           },
         ),
         const SizedBox(height: 8),
-        const RuleLine(
-          'Письма нет? Проверьте «Спам» и «Промоакции».',
-          caveat: true,
-        ),
+        RuleLine(context.l10n.codeNoEmail, caveat: true),
         const SizedBox(height: 8),
-        const RuleLine('Демо: код ${Session.demoCode}', caveat: true),
+        RuleLine(context.l10n.codeDemo(Session.demoCode), caveat: true),
       ],
     ),
   );

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:kettik/core/domain/game.dart';
 import 'package:kettik/core/domain/money.dart';
@@ -7,6 +7,7 @@ import 'package:kettik/core/ui/format.dart';
 import 'package:kettik/core/ui/parts.dart';
 import 'package:kettik/core/ui/pitch_view.dart';
 import 'package:kettik/core/ui/theme.dart';
+import 'package:kettik/core/ui/words.dart';
 
 class TicketScreen extends StatelessWidget {
   const TicketScreen({super.key, required this.gameId});
@@ -16,15 +17,26 @@ class TicketScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
+    return ListenableBuilder(
+      listenable: scope.store,
+      builder: (context, _) => _build(context, scope),
+    );
+  }
+
+  Widget _build(BuildContext context, AppScope scope) {
     final now = scope.now();
     final me = scope.me;
     final g = scope.store.game(gameId, now);
     final mine = g.numberOf(me);
+    final place = mine == null ? null : g.placeAt(mine);
+    final leaving = place is PaidPlace && place.leaving;
+    final canLeave =
+        place is PaidPlace && !leaving && now.isBefore(g.replaceDeadline);
     final untilStart = g.start.difference(now);
     final names = [
       for (final p in g.places)
         if (p case PaidPlace(:final player))
-          player.id == me?.id ? 'вы' : player.name,
+          player.id == me?.id ? context.l10n.youShort : player.name,
     ];
     return Scaffold(
       body: SafeArea(
@@ -39,7 +51,7 @@ class TicketScreen extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  'Игра состоится',
+                  context.l10n.statusConfirmed,
                   style: body(13, weight: 600, color: K.pitchText),
                 ),
               ],
@@ -65,8 +77,12 @@ class TicketScreen extends StatelessWidget {
                           children: [
                             Text(
                               untilStart.isNegative
-                                  ? 'Игра идёт'
-                                  : '${dayTitle(g.start, now).split(',').first} · через ${untilStart.inHours} ч ${untilStart.inMinutes % 60} мин',
+                                  ? context.l10n.gameRunning
+                                  : context.l10n.startsIn(
+                                      dayWord(context.l10n, g.start, now),
+                                      untilStart.inHours,
+                                      untilStart.inMinutes % 60,
+                                    ),
                               style: body(13, weight: 600),
                             ),
                             Text(hm(g.start), style: display(40)),
@@ -81,20 +97,23 @@ class TicketScreen extends StatelessWidget {
                         children: [
                           Text(g.venue.name, style: display(15)),
                           Text(
-                            '${g.venue.address} · до ${hm(g.end)}',
+                            context.l10n.untilTime(g.venue.address, hm(g.end)),
                             style: body(15, color: K.ink2),
                           ),
                           const SizedBox(height: 16),
                           Row(
                             children: [
                               _Cell(
-                                'Номер',
+                                context.l10n.cellNumber,
                                 mine == null ? '—' : '$mine',
                                 big: true,
                               ),
-                              _Cell('Формат', g.format),
                               _Cell(
-                                'Оплачено',
+                                context.l10n.cellFormat,
+                                formatName(context.l10n, g.size, g.teams),
+                              ),
+                              _Cell(
+                                context.l10n.cellPaid,
                                 mine == null
                                     ? '—'
                                     : formatTenge(g.shareOf(mine)),
@@ -110,11 +129,40 @@ class TicketScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Состав · ${g.paidCount}',
+              context.l10n.lineupCount(g.paidCount),
               style: display(13, weight: 500, color: K.ink2),
             ),
             const SizedBox(height: 8),
             Text(names.join(' · '), style: body(15).copyWith(height: 1.7)),
+            const SizedBox(height: 24),
+            if (leaving) ...[
+              RuleLine(
+                context.l10n.replaceSearch(
+                  hm(g.replaceDeadline),
+                  formatTenge(g.shareOf(mine!)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              PillButton(
+                context.l10n.stayInGame,
+                style: PillStyle.outline,
+                onPressed: () => scope.store.stay(gameId, mine),
+              ),
+            ] else if (canLeave) ...[
+              RuleLine(refundAfterConfirm(context.l10n, g), caveat: true),
+              PillButton(
+                context.l10n.cantCome,
+                style: PillStyle.quiet,
+                height: 44,
+                onPressed: () {
+                  try {
+                    scope.store.leave(gameId, mine!, scope.now());
+                  } on BookingRejected {
+                    return; // the cutoff passed while the screen was open
+                  }
+                },
+              ),
+            ],
           ],
         ),
       ),

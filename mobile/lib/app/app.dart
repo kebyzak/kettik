@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:kettik/core/data/games_store.dart';
 import 'package:kettik/core/data/session.dart';
@@ -8,6 +8,8 @@ import 'package:kettik/core/ui/theme.dart';
 import 'package:kettik/features/create/create_screen.dart';
 import 'package:kettik/features/feed/feed_screen.dart';
 import 'package:kettik/features/profile/profile_screen.dart';
+import 'package:kettik/l10n/app_localizations.dart';
+import 'package:kettik/core/ui/words.dart';
 
 class KettikApp extends StatelessWidget {
   const KettikApp({
@@ -15,24 +17,35 @@ class KettikApp extends StatelessWidget {
     required this.store,
     required this.session,
     required this.now,
+    required this.locale,
   });
 
   final GamesStore store;
   final Session session;
   final DateTime Function() now;
+  final ValueNotifier<Locale?> locale;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: session,
+    listenable: Listenable.merge([session, locale]),
     builder: (context, _) {
       return AppScope(
         store: store,
         session: session,
         me: session.me,
         now: now,
+        locale: locale,
         child: MaterialApp(
           title: 'kettik',
           debugShowCheckedModeBanner: false,
+          locale: locale.value,
+          supportedLocales: appLocales,
+          // Not AppLocalizations.localizationsDelegates: gen-l10n still wires the
+          // deprecated flutter_localizations classes, which material_ui widgets don't read.
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
           theme: kettikTheme(),
           home: const Shell(),
         ),
@@ -74,13 +87,13 @@ class _ShellState extends State<Shell> {
             child: Row(
               children: [
                 _Tab(
-                  label: 'Игры',
+                  label: context.l10n.tabGames,
                   selected: _tab == 0,
                   onTap: () => setState(() => _tab = 0),
                   icon: const _PitchGlyph(),
                 ),
                 _Tab(
-                  label: 'Собрать',
+                  label: context.l10n.tabCreate,
                   selected: false,
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -102,7 +115,7 @@ class _ShellState extends State<Shell> {
                   ),
                 ),
                 _Tab(
-                  label: 'Профиль',
+                  label: context.l10n.tabProfile,
                   selected: _tab == 1,
                   onTap: () => setState(() => _tab = 1),
                   icon: me == null

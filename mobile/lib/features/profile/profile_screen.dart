@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:kettik/core/domain/game.dart';
 import 'package:kettik/core/scope.dart';
@@ -10,6 +10,7 @@ import 'package:kettik/features/auth/sign_in.dart';
 import 'package:kettik/features/booking/hold_banner.dart';
 import 'package:kettik/features/game/game_screen.dart';
 import 'package:kettik/features/ticket/ticket_screen.dart';
+import 'package:kettik/l10n/app_localizations.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -48,7 +49,7 @@ class ProfileScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(me.name, style: display(22)),
-                        Text('Астана', style: body(13, color: K.ink2)),
+                        Text(context.l10n.city, style: body(13, color: K.ink2)),
                       ],
                     ),
                   ),
@@ -56,38 +57,42 @@ class ProfileScreen extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 24, bottom: 8),
-                child: Text('Мои игры', style: display(15)),
+                child: Text(context.l10n.myGames, style: display(15)),
               ),
               for (final (g, n) in scope.store.myHolds(scope.me, now)) ...[
                 HoldBanner(game: g, number: n, now: now),
                 const SizedBox(height: 8),
               ],
-              if (soon.isNotEmpty) const _Group('Скоро'),
+              if (soon.isNotEmpty) _Group(context.l10n.upcoming),
               for (final g in soon) _MyGame(game: g, now: now),
-              if (done.isNotEmpty) const _Group('Прошедшие'),
+              if (done.isNotEmpty) _Group(context.l10n.past),
               for (final g in done) _MyGame(game: g, now: now),
               if (mine.isEmpty)
-                Text(
-                  'Здесь появятся игры, в которых у вас есть место.',
-                  style: body(15, color: K.ink2),
-                ),
+                Text(context.l10n.myGamesEmpty, style: body(15, color: K.ink2)),
               Padding(
                 padding: const EdgeInsets.only(top: 16, bottom: 8),
-                child: Text('Аккаунт', style: display(15)),
+                child: Text(context.l10n.account, style: display(15)),
               ),
               Sheet(
                 padding: EdgeInsets.zero,
                 child: Column(
-                  children: const [
-                    _Setting('Язык', 'Русский'),
-                    Divider(height: 1, color: K.line),
-                    _Setting('Уведомления', 'Включены'),
+                  children: [
+                    _Setting(
+                      context.l10n.language,
+                      context.l10n.languageName,
+                      onTap: () => _pickLanguage(context, scope.locale),
+                    ),
+                    const Divider(height: 1, color: K.line),
+                    _Setting(
+                      context.l10n.notifications,
+                      context.l10n.notificationsOn,
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
               PillButton(
-                'Выйти',
+                context.l10n.signOut,
                 style: PillStyle.quiet,
                 height: 48,
                 onPressed: scope.session.signOut,
@@ -130,13 +135,17 @@ class _MyGame extends StatelessWidget {
       status,
       color,
     ) = game.end.isBefore(now) && game.status == GameStatus.confirmed
-        ? ('Сыграно · ${game.paidCount} игроков', K.ink2)
+        ? (context.l10n.played(game.paidCount), K.ink2)
         : game.status == GameStatus.funding
         ? (
-            '${game.paidCount}/${game.size} · сбор до ${hm(game.deadline)}',
+            context.l10n.collectingUntil(
+              game.paidCount,
+              game.size,
+              hm(game.deadline),
+            ),
             K.ink2,
           )
-        : statusWords(game);
+        : statusWords(context.l10n, game);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -164,7 +173,7 @@ class _MyGame extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        '${shortDay(game.start)} · ${hm(game.start)} · место №$number',
+                        '${shortDay(context.l10n, game.start)} · ${hm(game.start)} · ${context.l10n.placeNumber(number)}',
                         style: body(13, color: K.ink2),
                       ),
                       Text(status, style: body(13, weight: 600, color: color)),
@@ -182,23 +191,60 @@ class _MyGame extends StatelessWidget {
   }
 }
 
+void _pickLanguage(BuildContext context, ValueNotifier<Locale?> locale) {
+  final current = context.l10n.localeName;
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: K.sheet,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+    ),
+    builder: (sheet) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(context.l10n.language, style: display(22)),
+            const SizedBox(height: 8),
+            for (final l in appLocales)
+              _Setting(
+                lookupAppLocalizations(l).languageName,
+                l.languageCode == current ? '✓' : '',
+                onTap: () {
+                  locale.value = l;
+                  Navigator.of(sheet).pop();
+                },
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 class _Setting extends StatelessWidget {
-  const _Setting(this.label, this.value);
+  const _Setting(this.label, this.value, {this.onTap});
 
   final String label;
   final String value;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 52,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Text(label),
-          const Spacer(),
-          Text(value, style: body(15, color: K.ink2)),
-        ],
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    child: SizedBox(
+      height: 52,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            Text(label),
+            const Spacer(),
+            Text(value, style: body(15, color: K.ink2)),
+          ],
+        ),
       ),
     ),
   );
@@ -211,14 +257,11 @@ class _SignedOut extends StatelessWidget {
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
     children: [
-      Text('Профиль', style: display(22)),
+      Text(context.l10n.tabProfile, style: display(22)),
       const SizedBox(height: 8),
-      Text(
-        'Войдите, чтобы занимать места, собирать игры и видеть их здесь. Смотреть игры можно и без входа.',
-        style: body(15, color: K.ink2),
-      ),
+      Text(context.l10n.signedOutLead, style: body(15, color: K.ink2)),
       const SizedBox(height: 24),
-      PillButton('Войти по почте', onPressed: () => signIn(context)),
+      PillButton(context.l10n.signInEmail, onPressed: () => signIn(context)),
     ],
   );
 }

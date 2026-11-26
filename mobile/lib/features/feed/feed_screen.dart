@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:kettik/core/domain/game.dart';
 import 'package:kettik/core/domain/money.dart';
@@ -9,6 +9,7 @@ import 'package:kettik/core/ui/theme.dart';
 import 'package:kettik/features/booking/hold_banner.dart';
 import 'package:kettik/features/create/create_screen.dart';
 import 'package:kettik/features/game/game_screen.dart';
+import 'package:kettik/core/ui/words.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -34,7 +35,9 @@ class _FeedScreenState extends State<FeedScreen> {
           ).add(Duration(days: _day));
           final games = [
             for (final g in scope.store.games(now))
-              if (g.status == GameStatus.funding && sameDay(g.start, day)) g,
+              if ((g.status == GameStatus.funding || g.seeksReplacement) &&
+                  sameDay(g.start, day))
+                g,
           ];
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -43,7 +46,7 @@ class _FeedScreenState extends State<FeedScreen> {
                 children: [
                   const Wordmark(),
                   const Spacer(),
-                  Text('Астана', style: body(15, weight: 600)),
+                  Text(context.l10n.city, style: body(15, weight: 600)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -59,7 +62,7 @@ class _FeedScreenState extends State<FeedScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 20, bottom: 8),
                 child: Text(
-                  dayTitle(day, now),
+                  dayTitle(context.l10n, day, now),
                   style: display(13, weight: 500, color: K.ink2),
                 ),
               ),
@@ -91,17 +94,19 @@ class _DayStrip extends StatelessWidget {
     children: [
       for (var i = 0; i < 7; i++) ...[
         if (i > 0) const SizedBox(width: 6),
-        Expanded(child: _day(DateTime(now.year, now.month, now.day + i), i)),
+        Expanded(
+          child: _day(context, DateTime(now.year, now.month, now.day + i), i),
+        ),
       ],
     ],
   );
 
-  Widget _day(DateTime d, int i) {
+  Widget _day(BuildContext context, DateTime d, int i) {
     final on = i == selected;
     return Semantics(
       selected: on,
       button: true,
-      label: longDate(d),
+      label: longDate(context.l10n, d),
       excludeSemantics: true,
       child: Material(
         color: on ? K.ink : K.sheet,
@@ -115,7 +120,7 @@ class _DayStrip extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  weekdayShort(d),
+                  weekdayShort(context.l10n, d),
                   style: body(11, weight: 600, color: on ? K.sheet : K.ink),
                 ),
                 Text(
@@ -138,7 +143,7 @@ class _GameCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final me = AppScope.of(context).me;
-    final free = game.places.whereType<FreePlace>().length;
+    final free = kindsOf(game, me).where((k) => k == SpotKind.free).length;
     return Material(
       color: K.sheet,
       borderRadius: BorderRadius.circular(20),
@@ -161,13 +166,13 @@ class _GameCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      '${game.venue.address} · ${game.format}',
+                      '${game.venue.address} · ${formatName(context.l10n, game.size, game.teams)}',
                       style: body(13, color: K.ink2),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 10),
                     Semantics(
-                      label: 'Оплатили ${game.paidCount} из ${game.size}',
+                      label: context.l10n.paidOf(game.paidCount, game.size),
                       child: DotStrip(kindsOf(game, me)),
                     ),
                   ],
@@ -182,7 +187,11 @@ class _GameCard extends StatelessWidget {
                     style: display(13),
                   ),
                   Text(
-                    free == 0 ? 'держат места' : placesLeft(free),
+                    game.seeksReplacement
+                        ? context.l10n.feedSeeksReplacement
+                        : free == 0
+                        ? context.l10n.feedPlacesHeld
+                        : context.l10n.placesLeft(free),
                     style: body(
                       13,
                       weight: free <= 2 ? 600 : 400,
@@ -207,15 +216,12 @@ class _EmptyDay extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Поле пустое', style: display(22)),
+        Text(context.l10n.emptyTitle, style: display(22)),
         const SizedBox(height: 4),
-        Text(
-          'Пока никто не собирает. Соберите сами — первое место ваше.',
-          style: body(15, color: K.ink2),
-        ),
+        Text(context.l10n.emptyLead, style: body(15, color: K.ink2)),
         const SizedBox(height: 16),
         PillButton(
-          'Собрать игру',
+          context.l10n.createGame,
           onPressed: () => open(context, const CreateScreen()),
         ),
       ],

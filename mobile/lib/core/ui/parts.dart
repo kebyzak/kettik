@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:kettik/core/domain/game.dart';
 import 'package:kettik/core/ui/theme.dart';
+import 'package:kettik/core/ui/words.dart';
 
 enum SpotKind { paid, held, free, mine }
 
@@ -13,8 +14,12 @@ SpotKind kindOf(Place place, Player? me) => switch (place) {
   FreePlace() => SpotKind.free,
   HeldPlace(:final player) =>
     player.id == me?.id ? SpotKind.mine : SpotKind.held,
-  PaidPlace(:final player) =>
-    player.id == me?.id ? SpotKind.mine : SpotKind.paid,
+  PaidPlace(:final player, :final leaving) =>
+    player.id == me?.id
+        ? SpotKind.mine
+        : leaving
+        ? SpotKind.free
+        : SpotKind.paid,
 };
 
 List<SpotKind> kindsOf(Game g, Player? me) => [
@@ -224,18 +229,18 @@ class Wordmark extends StatelessWidget {
 class Back extends StatelessWidget {
   const Back({
     super.key,
-    this.tooltip = 'Назад',
+    this.tooltip,
     this.icon = Icons.arrow_back_ios_new_rounded,
     this.onPressed,
   });
 
-  final String tooltip;
+  final String? tooltip;
   final IconData icon;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) => IconButton(
-    tooltip: tooltip,
+    tooltip: tooltip ?? context.l10n.back,
     icon: Icon(icon, size: 22, color: K.ink),
     onPressed: onPressed ?? () => Navigator.of(context).maybePop(),
   );

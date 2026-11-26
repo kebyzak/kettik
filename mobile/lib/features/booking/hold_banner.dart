@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:kettik/core/domain/game.dart';
 import 'package:kettik/core/scope.dart';
 import 'package:kettik/core/ui/format.dart';
 import 'package:kettik/core/ui/theme.dart';
 import 'package:kettik/features/booking/hold_screen.dart';
+import 'package:kettik/core/ui/words.dart';
 
 class HoldBanner extends StatelessWidget {
   const HoldBanner({
@@ -40,11 +41,11 @@ class HoldBanner extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Место №$number держим ещё $left',
+                      context.l10n.bannerHolding(number, left),
                       style: body(13, weight: 600, color: K.signal),
                     ),
                     Text(
-                      '${game.venue.name} · ${shortDay(game.start)}, ${hm(game.start)}',
+                      '${game.venue.name} · ${shortDay(context.l10n, game.start)}, ${hm(game.start)}',
                       style: body(15, weight: 600),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -61,7 +62,7 @@ class HoldBanner extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'Оплатить',
+                  context.l10n.pay,
                   style: display(13, weight: 600, color: K.sheet),
                 ),
               ),

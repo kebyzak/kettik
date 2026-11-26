@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:kettik/core/domain/game.dart';
 import 'package:kettik/core/domain/money.dart';
@@ -49,18 +49,74 @@ class _GameScreenState extends State<GameScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Не получилось занять место', style: display(22)),
+          Text(context.l10n.takeFailedTitle, style: display(22)),
           const SizedBox(height: 8),
-          Text(rejectionText(reason), style: body(15, color: K.ink2)),
+          Text(
+            rejectionText(context.l10n, reason),
+            style: body(15, color: K.ink2),
+          ),
           const SizedBox(height: 20),
           PillButton(
-            'Выбрать другое место',
+            context.l10n.pickAnother,
             onPressed: () => Navigator.of(sheet).pop(),
           ),
         ],
       ),
     ),
   );
+
+  void _confirmLeave(Game g, int number, bool organizer) =>
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: K.sheet,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        builder: (sheet) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                organizer
+                    ? context.l10n.cancelGameQuestion
+                    : context.l10n.leaveGameQuestion,
+                style: display(22),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                organizer
+                    ? context.l10n.cancelGameBody
+                    : context.l10n.leaveGameBody(
+                        formatTenge(g.shareOf(number)),
+                        number,
+                      ),
+                style: body(15, color: K.ink2),
+              ),
+              const SizedBox(height: 20),
+              PillButton(
+                organizer ? context.l10n.cancelGame : context.l10n.leave,
+                onPressed: () {
+                  Navigator.of(sheet).pop();
+                  final scope = AppScope.of(context);
+                  try {
+                    scope.store.leave(widget.gameId, number, scope.now());
+                  } on BookingRejected {
+                    return; // the game closed meanwhile; the screen shows its status
+                  }
+                },
+              ),
+              PillButton(
+                context.l10n.stay,
+                style: PillStyle.quiet,
+                height: 44,
+                onPressed: () => Navigator.of(sheet).pop(),
+              ),
+            ],
+          ),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +129,7 @@ class _GameScreenState extends State<GameScreen> {
           final me = scope.me;
           final g = scope.store.game(widget.gameId, now);
           final kinds = kindsOf(g, me);
-          final (status, statusColor) = statusWords(g);
+          final (status, statusColor) = statusWords(context.l10n, g);
           return Scaffold(
             body: SafeArea(
               child: ListView(
@@ -95,7 +151,7 @@ class _GameScreenState extends State<GameScreen> {
                   Text(g.venue.name, style: display(22)),
                   const SizedBox(height: 4),
                   Text(
-                    '${longDate(g.start)} · ${timeRange(g.start, g.end)} · ${g.venue.address}',
+                    '${longDate(context.l10n, g.start)} · ${timeRange(g.start, g.end)} · ${g.venue.address}',
                     style: body(15, color: K.ink2),
                   ),
                   const SizedBox(height: 16),
@@ -127,7 +183,10 @@ class _GameScreenState extends State<GameScreen> {
                                 ],
                               ),
                             ),
-                            Text('оплатили', style: body(13, color: K.ink2)),
+                            Text(
+                              context.l10n.paidCaption,
+                              style: body(13, color: K.ink2),
+                            ),
                           ],
                         ),
                       ),
@@ -135,7 +194,7 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '${g.format} · ${g.level.toLowerCase()}',
+                    '${formatName(context.l10n, g.size, g.teams)} · ${levelName(context.l10n, g.level).toLowerCase()}',
                     style: body(13, color: K.ink2),
                   ),
                   const SizedBox(height: 16),
@@ -147,7 +206,7 @@ class _GameScreenState extends State<GameScreen> {
                         Padding(
                           padding: const EdgeInsets.only(left: 4, bottom: 8),
                           child: Text(
-                            'Состав',
+                            context.l10n.lineup,
                             style: display(13, weight: 500, color: K.ink2),
                           ),
                         ),
@@ -166,10 +225,14 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                   const SizedBox(height: 16),
                   RuleLine(
-                    refundPromise(g, g.shareOf(g.numberOf(me) ?? g.size)),
+                    refundPromise(
+                      context.l10n,
+                      g,
+                      g.shareOf(g.numberOf(me) ?? g.size),
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const RuleLine(noRefundAfterConfirm, caveat: true),
+                  RuleLine(refundAfterConfirm(context.l10n, g), caveat: true),
                 ],
               ),
             ),
@@ -187,32 +250,50 @@ class _GameScreenState extends State<GameScreen> {
     final mine = g.numberOf(me);
     if (mine != null && g.placeAt(mine) is HeldPlace) {
       return PillButton(
-        'Оплатить место №$mine · ${formatTenge(g.shareOf(mine))}',
+        context.l10n.payPlace(mine, formatTenge(g.shareOf(mine))),
         onPressed: () => open(context, HoldScreen(gameId: g.id, number: mine)),
       );
     }
     if (mine != null && g.status == GameStatus.confirmed) {
       return PillButton(
-        'Открыть билет',
+        context.l10n.openTicket,
         onPressed: () => open(context, TicketScreen(gameId: g.id)),
       );
     }
     if (mine != null) {
-      return PillButton(
-        'Вы в составе · №$mine',
+      final inSquad = PillButton(
+        context.l10n.inSquad(mine),
         onPressed: null,
         style: PillStyle.outline,
       );
+      if (g.status != GameStatus.funding) return inSquad;
+      final organizer = me!.id == g.organizerId;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          inSquad,
+          PillButton(
+            organizer ? context.l10n.cancelGame : context.l10n.leaveWithRefund,
+            style: PillStyle.quiet,
+            height: 44,
+            onPressed: () => _confirmLeave(g, mine, organizer),
+          ),
+        ],
+      );
     }
-    final free = g.places.indexWhere((p) => p is FreePlace) + 1;
-    if (g.status == GameStatus.funding && free > 0) {
+    final free = g.places.indexWhere((p) => kindOf(p, me) == SpotKind.free) + 1;
+    final taking =
+        g.status == GameStatus.funding || g.status == GameStatus.confirmed;
+    if (taking && free > 0) {
       return PillButton(
-        'Занять №$free · ${formatTenge(g.shareOf(free))}',
+        context.l10n.takePlace(free, formatTenge(g.shareOf(free))),
         onPressed: () => _take(free),
       );
     }
     return PillButton(
-      g.status == GameStatus.funding ? 'Все места держат' : statusWords(g).$1,
+      g.status == GameStatus.funding
+          ? context.l10n.allHeld
+          : statusWords(context.l10n, g).$1,
       onPressed: null,
     );
   }
@@ -239,7 +320,9 @@ class _Lineup extends StatelessWidget {
   Widget build(BuildContext context) {
     final half = (game.size / 2).ceil();
     Widget column(int from, int to) => Expanded(
-      child: Column(children: [for (var n = from; n <= to; n++) _row(n)]),
+      child: Column(
+        children: [for (var n = from; n <= to; n++) _row(context, n)],
+      ),
     );
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,23 +334,33 @@ class _Lineup extends StatelessWidget {
     );
   }
 
-  Widget _row(int n) {
+  Widget _row(BuildContext context, int n) {
     final place = game.placeAt(n);
     final kind = kindOf(place, me);
     final (name, meta, metaColor) = switch (place) {
-      FreePlace() => ('занять', '', K.ink2),
+      FreePlace() => (context.l10n.take, '', K.ink2),
       HeldPlace(:final player, :final until) => (
-        player.id == me?.id ? 'Вы' : player.name,
+        player.id == me?.id ? context.l10n.you : player.name,
         countdown(until.difference(now)),
         K.signal,
       ),
+      PaidPlace(:final player, leaving: true) when player.id == me?.id => (
+        context.l10n.you,
+        context.l10n.seekingReplacement,
+        K.signal,
+      ),
+      PaidPlace(:final player, leaving: true) => (
+        context.l10n.take,
+        context.l10n.insteadOf(player.name),
+        K.ink2,
+      ),
       PaidPlace(:final player) => (
-        player.id == me?.id ? 'Вы' : player.name,
-        player.id == game.organizerId ? 'собирает' : '',
+        player.id == me?.id ? context.l10n.you : player.name,
+        player.id == game.organizerId ? context.l10n.organizer : '',
         K.ink2,
       ),
     };
-    final free = place is FreePlace;
+    final free = kind == SpotKind.free;
     return Material(
       color: selected == n ? K.chalk : Colors.transparent,
       borderRadius: BorderRadius.circular(20),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:kettik/core/data/games_store.dart';
 import 'package:kettik/core/data/session.dart';
@@ -11,6 +11,7 @@ class AppScope extends InheritedWidget {
     required this.session,
     required this.me,
     required this.now,
+    required this.locale,
     required super.child,
   });
 
@@ -18,6 +19,8 @@ class AppScope extends InheritedWidget {
   final Session session;
   final Player? me;
   final DateTime Function() now;
+  // null follows the device language.
+  final ValueNotifier<Locale?> locale;
 
   static AppScope of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<AppScope>()!;
@@ -27,7 +30,8 @@ class AppScope extends InheritedWidget {
       old.store != store ||
       old.session != session ||
       old.me != me ||
-      old.now != now;
+      old.now != now ||
+      old.locale != locale;
 }
 
 Future<void> open(BuildContext context, Widget screen) =>

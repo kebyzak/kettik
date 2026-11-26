@@ -1,39 +1,59 @@
-import 'package:flutter/painting.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:kettik/core/domain/auth.dart';
 import 'package:kettik/core/domain/game.dart';
 import 'package:kettik/core/domain/money.dart';
 import 'package:kettik/core/ui/format.dart';
 import 'package:kettik/core/ui/theme.dart';
+import 'package:kettik/l10n/app_localizations.dart';
 
-(String, Color) statusWords(Game g) => switch (g.status) {
-  GameStatus.funding => ('Идёт сбор · до ${hm(g.deadline)}', K.signal),
-  GameStatus.confirmed => ('Игра состоится', K.pitchText),
-  GameStatus.expired => ('Не собрались — вернём деньги', K.ink2),
-  GameStatus.cancelled => ('Отменена — вернём деньги', K.ink2),
+// Russian first: Flutter falls back to the first locale for other device languages.
+const appLocales = [Locale('ru'), Locale('kk'), Locale('en')];
+
+extension L10nContext on BuildContext {
+  AppLocalizations get l10n => AppLocalizations.of(this);
+}
+
+(String, Color) statusWords(AppLocalizations l, Game g) => switch (g.status) {
+  GameStatus.funding => (l.statusFunding(hm(g.deadline)), K.signal),
+  GameStatus.confirmed => (l.statusConfirmed, K.pitchText),
+  GameStatus.expired => (l.statusExpired, K.ink2),
+  GameStatus.cancelled => (l.statusCancelled, K.ink2),
 };
 
-String rejectionText(Rejection r) => switch (r) {
-  Rejection.placeTaken =>
-    'Это место только что заняли. Деньги с вас не списаны.',
-  Rejection.alreadyInGame => 'У вас уже есть место в этой игре.',
-  Rejection.fundingClosed => 'Сбор на эту игру уже закрыт.',
-  Rejection.holdExpired =>
-    'Время на оплату вышло. Если деньги списались, они вернутся автоматически.',
-  Rejection.notHeld => 'Сначала займите место.',
+String rejectionText(AppLocalizations l, Rejection r) => switch (r) {
+  Rejection.placeTaken => l.rejectPlaceTaken,
+  Rejection.alreadyInGame => l.rejectAlreadyInGame,
+  Rejection.fundingClosed => l.rejectFundingClosed,
+  Rejection.holdExpired => l.rejectHoldExpired,
+  Rejection.notHeld => l.rejectNotHeld,
+  Rejection.cannotLeave => l.rejectCannotLeave,
 };
 
-String refundPromise(Game g, Tenge share) =>
-    'Не соберёмся к ${hm(g.deadline)} — вернём ${formatTenge(share)} полностью.';
+String refundPromise(AppLocalizations l, Game g, Tenge share) =>
+    l.refundPromise(hm(g.deadline), formatTenge(share));
 
-const noRefundAfterConfirm =
-    'После подтверждения автоматического возврата нет.';
+String refundAfterConfirm(AppLocalizations l, Game g) =>
+    l.refundAfterConfirm(hm(g.replaceDeadline));
 
-String authRejectionText(AuthRejected e) => switch (e.reason) {
-  AuthRejection.badEmail => 'Проверьте почту: похоже, в адресе опечатка.',
-  AuthRejection.wrongCode =>
-    'Неверный код. Осталось попыток: ${e.attemptsLeft}.',
-  AuthRejection.codeBurned => 'Код больше не действует. Запросите новый.',
-  AuthRejection.codeExpired => 'Код устарел. Запросите новый.',
-  AuthRejection.badName => 'Имя — от 2 до 40 символов.',
+String authRejectionText(AppLocalizations l, AuthRejected e) =>
+    switch (e.reason) {
+      AuthRejection.badEmail => l.authBadEmail,
+      AuthRejection.wrongCode => l.authWrongCode(e.attemptsLeft),
+      AuthRejection.codeBurned => l.authCodeBurned,
+      AuthRejection.codeExpired => l.authCodeExpired,
+      AuthRejection.badName => l.authBadName,
+    };
+
+String levelName(AppLocalizations l, Level level) => switch (level) {
+  Level.casual => l.levelCasual,
+  Level.middle => l.levelMiddle,
+  Level.strong => l.levelStrong,
 };
+
+String formatName(AppLocalizations l, int size, int teams) {
+  final side = size ~/ teams;
+  if (teams == 3) return l.formatThreeTeams(side);
+  if (size.isOdd) return l.formatWithSub(side);
+  return '$side×$side';
+}

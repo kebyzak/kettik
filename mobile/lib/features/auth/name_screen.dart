@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:kettik/core/data/session.dart';
 import 'package:kettik/core/domain/auth.dart';
@@ -30,14 +30,14 @@ class _NameScreenState extends State<NameScreen> {
     try {
       widget.session.register(_name.text);
     } on AuthRejected catch (e) {
-      setState(() => _error = authRejectionText(e));
+      setState(() => _error = authRejectionText(context.l10n, e));
     }
   }
 
   @override
   Widget build(BuildContext context) => AuthPage(
-    title: 'Как вас зовут?',
-    lead: 'Имя увидят игроки в составе и организатор игры.',
+    title: context.l10n.nameTitle,
+    lead: context.l10n.nameLead,
     field: TextField(
       controller: _name,
       autofocus: true,
@@ -46,12 +46,12 @@ class _NameScreenState extends State<NameScreen> {
       textInputAction: TextInputAction.done,
       maxLength: 40,
       style: body(17),
-      decoration: authField(hint: 'Имя и фамилия', error: _error),
+      decoration: authField(hint: context.l10n.nameHint, error: _error),
       onChanged: (_) => setState(() => _error = null),
       onSubmitted: (_) => _save(),
     ),
     action: PillButton(
-      'Готово',
+      context.l10n.nameDone,
       onPressed: _name.text.trim().isEmpty ? null : _save,
     ),
   );

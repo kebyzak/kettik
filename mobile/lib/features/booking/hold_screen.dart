@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:kettik/core/domain/game.dart';
 import 'package:kettik/core/domain/money.dart';
@@ -58,7 +58,7 @@ class HoldScreen extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: Transform.translate(
                       offset: const Offset(-12, 0),
-                      child: const Back(tooltip: 'Назад к игре'),
+                      child: Back(tooltip: context.l10n.backToGame),
                     ),
                   ),
                   ClipRRect(
@@ -71,8 +71,8 @@ class HoldScreen extends StatelessWidget {
                         pulse: held ? number : null,
                         overlay: Text(
                           held
-                              ? 'Место №$number за вами'
-                              : 'Место освободилось',
+                              ? context.l10n.placeYours(number)
+                              : context.l10n.placeFreed,
                           style: display(22),
                         ),
                       ),
@@ -88,16 +88,22 @@ class HoldScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                     child: Column(
                       children: [
-                        _Fact('Игра', g.venue.name),
-                        _Fact('Когда', '${shortDay(g.start)} · ${hm(g.start)}'),
+                        _Fact(context.l10n.factGame, g.venue.name),
                         _Fact(
-                          'Аренда',
-                          '${formatTenge(g.rent)} на ${g.size} мест',
+                          context.l10n.factWhen,
+                          '${shortDay(context.l10n, g.start)} · ${hm(g.start)}',
+                        ),
+                        _Fact(
+                          context.l10n.factRent,
+                          context.l10n.rentFor(formatTenge(g.rent), g.size),
                         ),
                         const Divider(height: 16, color: K.line),
                         Row(
                           children: [
-                            Text('Ваша доля', style: body(15, weight: 600)),
+                            Text(
+                              context.l10n.yourShare,
+                              style: body(15, weight: 600),
+                            ),
                             const Spacer(),
                             Text(
                               formatTenge(g.shareOf(number)),
@@ -109,13 +115,15 @@ class HoldScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  RuleLine(refundPromise(g, g.shareOf(number))),
+                  if (g.status == GameStatus.confirmed)
+                    RuleLine(context.l10n.alreadyFull)
+                  else ...[
+                    RuleLine(refundPromise(context.l10n, g, g.shareOf(number))),
+                    const SizedBox(height: 8),
+                    RuleLine(context.l10n.changeMind),
+                  ],
                   const SizedBox(height: 8),
-                  const RuleLine(
-                    'Передумаете до подтверждения — деньги вернутся.',
-                  ),
-                  const SizedBox(height: 8),
-                  const RuleLine(noRefundAfterConfirm, caveat: true),
+                  RuleLine(refundAfterConfirm(context.l10n, g), caveat: true),
                 ],
               ),
             ),
@@ -126,16 +134,21 @@ class HoldScreen extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         PillButton(
-                          'Оплатить ${formatTenge(g.shareOf(number))}',
+                          context.l10n.payAmount(
+                            formatTenge(g.shareOf(number)),
+                          ),
                           onPressed: () => _pay(context),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Картой на защищённой странице банка',
+                          context.l10n.payByCard,
                           style: body(13, color: K.ink2),
                         ),
                         PillButton(
-                          'Освободить место',
+                          me!.id == g.organizerId &&
+                                  g.status == GameStatus.funding
+                              ? context.l10n.cancelGame
+                              : context.l10n.releasePlace,
                           style: PillStyle.quiet,
                           height: 44,
                           onPressed: () => _release(context),
@@ -143,7 +156,7 @@ class HoldScreen extends StatelessWidget {
                       ],
                     )
                   : PillButton(
-                      'Вернуться к игре',
+                      context.l10n.backToGame,
                       onPressed: () => Navigator.of(context).pop(),
                     ),
             ),
@@ -171,7 +184,10 @@ class _Timer extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Держим, пока вы платите', style: body(15, weight: 600)),
+                Text(
+                  context.l10n.holdingWhilePay,
+                  style: body(15, weight: 600),
+                ),
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(3),
@@ -188,7 +204,7 @@ class _Timer extends StatelessWidget {
           const SizedBox(width: 16),
           Semantics(
             liveRegion: false,
-            label: 'Осталось',
+            label: context.l10n.timeLeft,
             child: Text(countdown(left), style: display(22, color: color)),
           ),
         ],
@@ -206,12 +222,9 @@ class _Lapsed extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Время вышло', style: body(15, weight: 600)),
+        Text(context.l10n.timeUp, style: body(15, weight: 600)),
         const SizedBox(height: 4),
-        Text(
-          'Если деньги успели списаться, они вернутся автоматически.',
-          style: body(13, color: K.ink2),
-        ),
+        Text(context.l10n.timeUpBody, style: body(13, color: K.ink2)),
       ],
     ),
   );

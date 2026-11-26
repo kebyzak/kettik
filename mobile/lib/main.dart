@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:kettik/app/app.dart';
 import 'package:kettik/core/data/demo_data.dart';
@@ -12,6 +12,7 @@ void main() {
       store: GamesStore(demoGames()),
       session: Session(accounts: {demoEmail: demoMe}),
       now: () => demoStart.add(started.elapsed),
+      locale: ValueNotifier(null),
     ),
   );
 }

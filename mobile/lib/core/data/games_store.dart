@@ -30,6 +30,11 @@ class GamesStore extends ChangeNotifier {
   void release(String id, int number) =>
       _write(id, _games[id]!.release(number));
 
+  void leave(String id, int number, DateTime now) =>
+      _write(id, _games[id]!.leave(number, now));
+
+  void stay(String id, int number) => _write(id, _games[id]!.stay(number));
+
   String create({
     required Player organizer,
     required Venue venue,
@@ -37,8 +42,8 @@ class GamesStore extends ChangeNotifier {
     required DateTime end,
     required Tenge rent,
     required int size,
-    required String format,
-    required String level,
+    required int teams,
+    required Level level,
     required DateTime now,
   }) {
     final id = 'new-${++_created}';
@@ -48,7 +53,7 @@ class GamesStore extends ChangeNotifier {
       start: start,
       end: end,
       rent: rent,
-      format: format,
+      teams: teams,
       level: level,
       organizerId: organizer.id,
       createdAt: now,

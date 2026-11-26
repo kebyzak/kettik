@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:kettik/core/data/demo_data.dart';
 import 'package:kettik/core/domain/game.dart';
@@ -9,22 +9,16 @@ import 'package:kettik/core/ui/parts.dart';
 import 'package:kettik/core/ui/theme.dart';
 import 'package:kettik/features/auth/sign_in.dart';
 import 'package:kettik/features/booking/hold_screen.dart';
+import 'package:kettik/core/ui/words.dart';
 
 const _hourly = Tenge(33000);
 const _slots = [(20, 0), (21, 0), (21, 30), (22, 0), (22, 30), (23, 0)];
 const _bookedSlots = {(21, 0), (23, 0)};
-const _durations = [(60, '1 час'), (90, '1,5 часа'), (120, '2 часа')];
-const _levels = ['Любители', 'Средний', 'Сильный'];
+const _durations = [60, 90, 120];
 const minSize = 6;
 const maxSize = 22;
 
-String formatFor(int size) {
-  if (size % 3 == 0 && size >= 12) {
-    return '${size ~/ 3}×${size ~/ 3}, три команды';
-  }
-  if (size.isEven) return '${size ~/ 2}×${size ~/ 2}';
-  return '${size ~/ 2}×${size ~/ 2} с заменой';
-}
+int _teamsFor(int size) => size % 3 == 0 && size >= 12 ? 3 : 2;
 
 class CreateScreen extends StatefulWidget {
   const CreateScreen({super.key});
@@ -55,11 +49,11 @@ class _CreateScreenState extends State<CreateScreen> {
       organizer: me,
       venue: nis,
       start: start,
-      end: start.add(Duration(minutes: _durations[_duration].$1)),
+      end: start.add(Duration(minutes: _durations[_duration])),
       rent: _rent,
       size: _size,
-      format: formatFor(_size),
-      level: _levels[_level],
+      teams: _teamsFor(_size),
+      level: Level.values[_level],
       now: now,
     );
     Navigator.of(context).pushReplacement(
@@ -69,7 +63,7 @@ class _CreateScreenState extends State<CreateScreen> {
     );
   }
 
-  Tenge get _rent => Tenge(_hourly.value * _durations[_duration].$1 ~/ 60);
+  Tenge get _rent => Tenge(_hourly.value * _durations[_duration] ~/ 60);
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +72,7 @@ class _CreateScreenState extends State<CreateScreen> {
     final shares = splitRent(_rent, _size);
     final perPlayer = shares.first == shares.last
         ? formatTenge(shares.last)
-        : 'от ${formatTenge(shares.last)}';
+        : context.l10n.fromAmount(formatTenge(shares.last));
     return Scaffold(
       body: SafeArea(
         child: ListView(
@@ -86,12 +80,12 @@ class _CreateScreenState extends State<CreateScreen> {
           children: [
             Row(
               children: [
-                Text('Собрать игру', style: display(22)),
+                Text(context.l10n.createGame, style: display(22)),
                 const Spacer(),
                 Transform.translate(
                   offset: const Offset(12, 0),
-                  child: const Back(
-                    tooltip: 'Закрыть',
+                  child: Back(
+                    tooltip: context.l10n.close,
                     icon: Icons.close_rounded,
                   ),
                 ),
@@ -102,15 +96,18 @@ class _CreateScreenState extends State<CreateScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${nis.name} · поле 1', style: body(15, weight: 600)),
                   Text(
-                    '${nis.address} · искусственная трава',
+                    context.l10n.pitchOne(nis.name),
+                    style: body(15, weight: 600),
+                  ),
+                  Text(
+                    context.l10n.artificialTurf(nis.address),
                     style: body(13, color: K.ink2),
                   ),
                 ],
               ),
             ),
-            _Label('${longDate(now)} · начало'),
+            _Label(context.l10n.startOn(longDate(context.l10n, now))),
             GridView.count(
               crossAxisCount: 4,
               shrinkWrap: true,
@@ -131,7 +128,11 @@ class _CreateScreenState extends State<CreateScreen> {
             ),
             const SizedBox(height: 16),
             _Segmented(
-              labels: [for (final d in _durations) d.$2],
+              labels: [
+                context.l10n.duration60,
+                context.l10n.duration90,
+                context.l10n.duration120,
+              ],
               selected: _duration,
               onSelect: (i) => setState(() => _duration = i),
             ),
@@ -149,9 +150,18 @@ class _CreateScreenState extends State<CreateScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Игроков', style: body(15, weight: 600)),
                               Text(
-                                '${formatFor(_size)} · первое место ваше',
+                                context.l10n.players,
+                                style: body(15, weight: 600),
+                              ),
+                              Text(
+                                context.l10n.firstPlaceYours(
+                                  formatName(
+                                    context.l10n,
+                                    _size,
+                                    _teamsFor(_size),
+                                  ),
+                                ),
                                 style: body(13, color: K.ink2),
                               ),
                             ],
@@ -159,7 +169,7 @@ class _CreateScreenState extends State<CreateScreen> {
                         ),
                         _Step(
                           Icons.remove_rounded,
-                          'Меньше игроков',
+                          context.l10n.fewerPlayers,
                           _size > minSize
                               ? () => setState(() => _size--)
                               : null,
@@ -174,7 +184,7 @@ class _CreateScreenState extends State<CreateScreen> {
                         ),
                         _Step(
                           Icons.add_rounded,
-                          'Больше игроков',
+                          context.l10n.morePlayers,
                           _size < maxSize
                               ? () => setState(() => _size++)
                               : null,
@@ -200,7 +210,7 @@ class _CreateScreenState extends State<CreateScreen> {
                                       shape: BoxShape.circle,
                                     ),
                                     child: Text(
-                                      'вы',
+                                      context.l10n.youShort,
                                       style: display(9, color: K.sheet),
                                     ),
                                   )
@@ -221,21 +231,26 @@ class _CreateScreenState extends State<CreateScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Аренда ${formatTenge(_rent)} : $_size',
+                            context.l10n.rentSplit(formatTenge(_rent), _size),
                             style: body(15, color: K.ink2),
                           ),
                         ),
                         Text(perPlayer, style: display(15)),
-                        Text(' с игрока', style: body(15, color: K.ink2)),
+                        Text(
+                          context.l10n.perPlayer,
+                          style: body(15, color: K.ink2),
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-            _Label('Уровень'),
+            _Label(context.l10n.level),
             _Segmented(
-              labels: _levels,
+              labels: [
+                for (final v in Level.values) levelName(context.l10n, v),
+              ],
               selected: _level,
               onSelect: (i) => setState(() => _level = i),
             ),
@@ -251,15 +266,16 @@ class _CreateScreenState extends State<CreateScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
-                  'Сбор закроется в ${hm(fundingDeadline(createdAt: now, start: _at(now, slot)))}. '
-                  'Не соберёмся — все получат деньги обратно.',
+                  context.l10n.fundingClosesAt(
+                    hm(fundingDeadline(createdAt: now, start: _at(now, slot))),
+                  ),
                   style: body(13, color: K.ink2),
                 ),
               ),
             PillButton(
               slot == null
-                  ? 'На сегодня свободного времени нет'
-                  : 'Создать и оплатить · ${formatTenge(shares.first)}',
+                  ? context.l10n.noSlotsToday
+                  : context.l10n.createAndPay(formatTenge(shares.first)),
               onPressed: slot == null ? null : () => _create(now, slot),
             ),
           ],
@@ -326,7 +342,7 @@ class _Choice extends StatelessWidget {
     return Semantics(
       selected: selected,
       enabled: enabled,
-      label: enabled ? null : '$label, занято',
+      label: enabled ? null : context.l10n.slotTaken(label),
       child: Material(
         color: selected ? K.ink : (enabled ? K.sheet : Colors.transparent),
         borderRadius: BorderRadius.circular(22),

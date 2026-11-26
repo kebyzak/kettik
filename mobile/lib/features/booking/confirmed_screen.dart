@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:kettik/core/scope.dart';
 import 'package:kettik/core/ui/format.dart';
@@ -6,6 +6,7 @@ import 'package:kettik/core/ui/parts.dart';
 import 'package:kettik/core/ui/pitch_view.dart';
 import 'package:kettik/core/ui/theme.dart';
 import 'package:kettik/features/ticket/ticket_screen.dart';
+import 'package:kettik/core/ui/words.dart';
 
 class ConfirmedScreen extends StatefulWidget {
   const ConfirmedScreen({super.key, required this.gameId});
@@ -57,14 +58,14 @@ class _ConfirmedScreenState extends State<ConfirmedScreen>
               Row(
                 children: [
                   Text(
-                    '${shortDay(g.start)} · ${hm(g.start)}',
+                    '${shortDay(context.l10n, g.start)} · ${hm(g.start)}',
                     style: body(15, weight: 600),
                   ),
                   const Spacer(),
                   Transform.translate(
                     offset: const Offset(12, 0),
                     child: Back(
-                      tooltip: 'Закрыть',
+                      tooltip: context.l10n.close,
                       icon: Icons.close_rounded,
                       onPressed: () =>
                           Navigator.of(context).popUntil((r) => r.isFirst),
@@ -81,14 +82,14 @@ class _ConfirmedScreenState extends State<ConfirmedScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${g.paidCount}/${g.size} · состав собран',
+                        context.l10n.confirmedSquad(g.paidCount, g.size),
                         style: display(13),
                       ),
                       const SizedBox(height: 8),
-                      Text('Игра состоится', style: display(34)),
+                      Text(context.l10n.statusConfirmed, style: display(34)),
                       const SizedBox(height: 12),
                       Text(
-                        'Поле ${g.venue.name} забронировано за вами. Ждём на поле в ${hm(g.start)}.',
+                        context.l10n.confirmedLead(g.venue.name, hm(g.start)),
                         style: body(15),
                       ),
                     ],
@@ -102,7 +103,7 @@ class _ConfirmedScreenState extends State<ConfirmedScreen>
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16),
         child: PillButton(
-          'Открыть билет',
+          context.l10n.openTicket,
           onPressed: () => Navigator.of(context).pushReplacement(
             MaterialPageRoute<void>(
               builder: (_) => TicketScreen(gameId: widget.gameId),

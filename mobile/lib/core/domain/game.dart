@@ -3,6 +3,7 @@ import 'package:kettik/core/domain/money.dart';
 const placeHold = Duration(minutes: 10);
 const fundingWindow = Duration(hours: 24);
 const fundingCloseBeforeStart = Duration(hours: 2);
+const replaceCloseBeforeStart = Duration(hours: 2);
 
 DateTime fundingDeadline({
   required DateTime createdAt,
@@ -36,17 +37,23 @@ final class FreePlace extends Place {
 }
 
 final class HeldPlace extends Place {
-  const HeldPlace(this.player, this.until);
+  const HeldPlace(this.player, this.until, {this.replacing});
 
   final Player player;
   final DateTime until;
+  // Set when the hold buys out a confirmed player who is leaving.
+  final Player? replacing;
 }
 
 final class PaidPlace extends Place {
-  const PaidPlace(this.player);
+  const PaidPlace(this.player, {this.leaving = false});
 
   final Player player;
+  // Leaving after confirmation: open to a replacement until replaceDeadline.
+  final bool leaving;
 }
+
+enum Level { casual, middle, strong }
 
 enum GameStatus { funding, confirmed, expired, cancelled }
 
@@ -56,6 +63,7 @@ enum Rejection {
   fundingClosed,
   holdExpired,
   notHeld,
+  cannotLeave,
 }
 
 class BookingRejected implements Exception {
@@ -74,7 +82,7 @@ class Game {
     required this.start,
     required this.end,
     required this.rent,
-    required this.format,
+    this.teams = 2,
     required this.level,
     required this.organizerId,
     required this.createdAt,
@@ -87,14 +95,20 @@ class Game {
   final DateTime start;
   final DateTime end;
   final Tenge rent;
-  final String format;
-  final String level;
+  final int teams;
+  final Level level;
   final String organizerId;
   final DateTime createdAt;
   final List<Place> places;
   final GameStatus status;
 
   DateTime get deadline => fundingDeadline(createdAt: createdAt, start: start);
+
+  DateTime get replaceDeadline => start.subtract(replaceCloseBeforeStart);
+
+  bool get seeksReplacement =>
+      status == GameStatus.confirmed &&
+      places.any((p) => p is PaidPlace && p.leaving);
 
   int get size => places.length;
 
@@ -119,9 +133,19 @@ class Game {
   }
 
   Game at(DateTime now) {
+    final replacing = now.isBefore(replaceDeadline);
     final current = [
       for (final p in places)
-        p is HeldPlace && !now.isBefore(p.until) ? const FreePlace() : p,
+        switch (p) {
+          HeldPlace(:final until, replacing: final r)
+              when !now.isBefore(until) =>
+            r == null ? const FreePlace() : PaidPlace(r, leaving: replacing),
+          // No replacement in time: the leaver keeps the place and the charge.
+          PaidPlace(:final player, leaving: true) when !replacing => PaidPlace(
+            player,
+          ),
+          _ => p,
+        },
     ];
     final expired = status == GameStatus.funding && !now.isBefore(deadline);
     return _copy(
@@ -132,18 +156,25 @@ class Game {
 
   Game hold(int number, Player player, DateTime now) {
     final game = at(now);
-    if (game.status != GameStatus.funding) {
+    final confirmed = game.status == GameStatus.confirmed;
+    if (game.status != GameStatus.funding && !confirmed) {
       throw const BookingRejected(Rejection.fundingClosed);
     }
     if (game.numberOf(player) != null) {
       throw const BookingRejected(Rejection.alreadyInGame);
     }
-    if (game.placeAt(number) is! FreePlace) {
+    final place = game.placeAt(number);
+    final Player? leaver = switch (place) {
+      PaidPlace(:final player, leaving: true) when confirmed => player,
+      _ => null,
+    };
+    if (confirmed ? leaver == null : place is! FreePlace) {
       throw const BookingRejected(Rejection.placeTaken);
     }
     final byHold = now.add(placeHold);
-    final until = byHold.isBefore(deadline) ? byHold : deadline;
-    return game._replace(number, HeldPlace(player, until));
+    final limit = confirmed ? replaceDeadline : deadline;
+    final until = byHold.isBefore(limit) ? byHold : limit;
+    return game._replace(number, HeldPlace(player, until, replacing: leaver));
   }
 
   Game pay(int number, DateTime now) {
@@ -159,8 +190,44 @@ class Game {
         : paid;
   }
 
-  Game release(int number) =>
-      placeAt(number) is HeldPlace ? _replace(number, const FreePlace()) : this;
+  Game release(int number) => switch (placeAt(number)) {
+    HeldPlace(:final player, replacing: null)
+        when player.id == organizerId && status == GameStatus.funding =>
+      _copy(status: GameStatus.cancelled),
+    HeldPlace(replacing: final r) => _replace(
+      number,
+      r == null ? const FreePlace() : PaidPlace(r, leaving: true),
+    ),
+    _ => this,
+  };
+
+  // Before confirmation the place is freed and refunded; the organizer leaving
+  // cancels the room and refunds everyone. After confirmation the booking
+  // stays and the leaver is refunded only if a replacement pays in time.
+  Game leave(int number, DateTime now) {
+    final game = at(now);
+    final place = game.placeAt(number);
+    if (place is! PaidPlace) throw const BookingRejected(Rejection.cannotLeave);
+    if (game.status == GameStatus.funding) {
+      return place.player.id == organizerId
+          ? game._copy(status: GameStatus.cancelled)
+          : game._replace(number, const FreePlace());
+    }
+    if (game.status != GameStatus.confirmed ||
+        place.leaving ||
+        !now.isBefore(replaceDeadline)) {
+      throw const BookingRejected(Rejection.cannotLeave);
+    }
+    return game._replace(number, PaidPlace(place.player, leaving: true));
+  }
+
+  Game stay(int number) => switch (placeAt(number)) {
+    PaidPlace(:final player, leaving: true) => _replace(
+      number,
+      PaidPlace(player),
+    ),
+    _ => this,
+  };
 
   Game _replace(int number, Place place) =>
       _copy(places: [...places]..[number - 1] = place);
@@ -171,7 +238,7 @@ class Game {
     start: start,
     end: end,
     rent: rent,
-    format: format,
+    teams: teams,
     level: level,
     organizerId: organizerId,
     createdAt: createdAt,
