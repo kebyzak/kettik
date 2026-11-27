@@ -31,7 +31,6 @@ String shortDay(AppLocalizations l, DateTime d) =>
 String longDate(AppLocalizations l, DateTime d) =>
     '${_capital(_weekday(l, d))}, ${DateFormat.MMMMd(l.localeName).format(d)}';
 
-/// «Сегодня», «Завтра» or the weekday.
 String dayWord(AppLocalizations l, DateTime d, DateTime now) {
   if (sameDay(d, now)) return l.today;
   if (sameDay(d, now.add(const Duration(days: 1)))) return l.tomorrow;

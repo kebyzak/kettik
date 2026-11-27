@@ -417,7 +417,10 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String get noSlotsToday => 'Бүгін бос уақыт жоқ';
+  String get noSlotsToday => 'Бұл күні бос уақыт жоқ';
+
+  @override
+  String get noVenues => 'Әзірге алаңдар жоқ. Жақында пайда болады';
 
   @override
   String createAndPay(String amount) {

@@ -17,7 +17,6 @@ class Session extends ChangeNotifier {
 
   Player? get me => _me;
 
-  /// Signs back in with the saved token, if it still works.
   Future<void> restore() async {
     _api.token = await _storage.read(key: _tokenKey);
     if (_api.token == null) return;
@@ -26,7 +25,6 @@ class Session extends ChangeNotifier {
       if (player == null) return await _forget();
       _signIn(player);
     } on ApiError catch (e) {
-      // shortcut: offline at launch starts signed out but keeps the token; retry /me on reconnect if that bothers players.
       if (e.status == 401) await _forget();
     }
   }
@@ -36,11 +34,9 @@ class Session extends ChangeNotifier {
         parseEmail(raw) ?? (throw const AuthRejected(AuthRejection.badEmail));
     await _call(() => _api.post('/auth/code', {'email': email}));
     _email = email;
-    // Within the server's resend window a repeat request sends nothing.
     return (email: email, resendAt: DateTime.now().add(resendAfter));
   }
 
-  /// True when signed in; false when the player still has to give a name.
   Future<bool> verify(String code) async {
     final email = _email;
     if (email == null) throw const AuthRejected(AuthRejection.codeBurned);
@@ -66,7 +62,7 @@ class Session extends ChangeNotifier {
     try {
       await _api.post('/auth/logout');
     } on ApiError {
-      // The token is dropped here either way; the server one expires unused.
+      // The token is dropped here either way;
     }
     await _forget();
     _me = null;

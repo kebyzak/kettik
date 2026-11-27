@@ -153,3 +153,24 @@ func Settle(ctx context.Context, db *pgxpool.Pool, id string) error {
 		return nil
 	})
 }
+
+// Cancel frees a booking's time. A game ends as cancelled and refunds every
+// charge; a manual booking or a block just stops holding the field.
+func Cancel(ctx context.Context, db *pgxpool.Pool, bookingID string) error {
+	var roomID *string
+	err := db.QueryRow(ctx, `select r.id::text from bookings b left join rooms r on r.booking_id = b.id where b.id = $1`, bookingID).Scan(&roomID)
+	if err != nil {
+		return err
+	}
+	if roomID == nil {
+		_, err := db.Exec(ctx, `update bookings set status = 'cancelled' where id = $1 and status = 'confirmed'`, bookingID)
+		return err
+	}
+	return change(ctx, db, *roomID, func(_ pgx.Tx, r *room, t time.Time) error {
+		r.settle(t)
+		if r.Status == held || r.Status == confirmed {
+			r.end(cancelled, "cancelled")
+		}
+		return nil
+	})
+}

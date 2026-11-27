@@ -33,7 +33,7 @@ func New(db *pgxpool.Pool, a *auth.Service) *Service { return &Service{db: db, a
 // Routes adds the player API. dev also adds a fake provider that marks payments paid.
 func (s *Service) Routes(mux *http.ServeMux, dev bool) {
 	mux.HandleFunc("GET /venues", s.venues)
-	mux.HandleFunc("GET /fields/{id}/busy", s.busy)
+	mux.HandleFunc("GET /fields/{id}/slots", s.slots)
 	mux.HandleFunc("GET /games", s.feed)
 	mux.HandleFunc("GET /games/{id}", s.game)
 	mux.HandleFunc("POST /games", s.auth.Require(s.create))
@@ -48,11 +48,13 @@ func (s *Service) Routes(mux *http.ServeMux, dev bool) {
 	}
 }
 
+// venues lists venues with the fields that have tariffs: a field without them never opens.
 func (s *Service) venues(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.db.Query(r.Context(), `
 		select v.id::text, v.name, v.address,
-		       json_agg(json_build_object('id', f.id, 'name', f.name, 'pricePerHour', f.price_per_hour) order by f.name)
+		       json_agg(json_build_object('id', f.id, 'name', f.name) order by f.name)
 		from venues v join fields f on f.venue_id = v.id
+		where exists (select 1 from tariffs t where t.field_id = f.id)
 		group by v.id order by v.name`)
 	if err != nil {
 		web.Internal(w, err)
@@ -63,9 +65,8 @@ func (s *Service) venues(w http.ResponseWriter, r *http.Request) {
 		Name    string `json:"name"`
 		Address string `json:"address"`
 		Fields  []struct {
-			ID           string `json:"id"`
-			Name         string `json:"name"`
-			PricePerHour int    `json:"pricePerHour"`
+			ID   string `json:"id"`
+			Name string `json:"name"`
 		} `json:"fields"`
 	}
 	list, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (venue, error) {
@@ -80,30 +81,59 @@ func (s *Service) venues(w http.ResponseWriter, r *http.Request) {
 	web.WriteJSON(w, http.StatusOK, list)
 }
 
-// busy lists the field's taken intervals in [from, to), for picking a slot.
-func (s *Service) busy(w http.ResponseWriter, r *http.Request) {
-	from, err1 := time.Parse(time.RFC3339, r.URL.Query().Get("from"))
-	to, err2 := time.Parse(time.RFC3339, r.URL.Query().Get("to"))
-	if err1 != nil || err2 != nil || !from.Before(to) || to.Sub(from) > 31*24*time.Hour {
+// slots lists the starts on a local date (YYYY-MM-DD) where a game of the
+// given minutes fits: the field is open by its tariffs, the time is free and
+// funding can still run. Each comes with its rent.
+func (s *Service) slots(w http.ResponseWriter, r *http.Request) {
+	day, err := time.ParseInLocation("2006-01-02", r.URL.Query().Get("date"), Local)
+	minutes, err2 := strconv.Atoi(r.URL.Query().Get("minutes"))
+	length := time.Duration(minutes) * time.Minute
+	if err != nil || err2 != nil || !durations[length] {
 		web.Fail(w, http.StatusBadRequest, "bad_range", nil)
 		return
 	}
-	rows, err := s.db.Query(r.Context(), `
+	ctx := r.Context()
+	fieldID := r.PathValue("id")
+	tariffs, err := LoadTariffs(ctx, s.db, fieldID)
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	next := day.AddDate(0, 0, 1)
+	rows, err := s.db.Query(ctx, `
 		select lower(during), upper(during) from bookings
-		where field_id = $1 and status in ('held', 'confirmed') and during && tstzrange($2, $3)
-		order by lower(during)`, r.PathValue("id"), from, to)
+		where field_id = $1 and status in ('held', 'confirmed') and during && tstzrange($2, $3)`,
+		fieldID, day, next.Add(length))
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	type span struct{ Start, End time.Time }
+	busy, err := pgx.CollectRows(rows, pgx.RowToStructByPos[span])
 	if err != nil {
 		web.Internal(w, err)
 		return
 	}
-	type span struct {
+	type slot struct {
 		Start time.Time `json:"start"`
 		End   time.Time `json:"end"`
+		Rent  int64     `json:"rent"` // tenge
 	}
-	list, err := pgx.CollectRows(rows, pgx.RowToStructByPos[span])
-	if err != nil {
-		web.Internal(w, err)
-		return
+	list := []slot{}
+	now := time.Now()
+	for start := day; start.Before(next); start = start.Add(Step) {
+		end := start.Add(length)
+		if !now.Before(fundingDeadline(now, start)) {
+			continue
+		}
+		price, open := rent(tariffs, start, end)
+		taken := false
+		for _, b := range busy {
+			taken = taken || (b.Start.Before(end) && start.Before(b.End))
+		}
+		if open && !taken {
+			list = append(list, slot{start, end, price})
+		}
 	}
 	web.WriteJSON(w, http.StatusOK, list)
 }
@@ -123,7 +153,7 @@ func (s *Service) create(w http.ResponseWriter, r *http.Request) {
 	if !web.ReadJSON(w, r, &in) {
 		return
 	}
-	if !durations[in.End.Sub(in.Start)] || in.Size < minSize || in.Size > maxSize ||
+	if !durations[in.End.Sub(in.Start)] || !OnGrid(in.Start) || in.Size < minSize || in.Size > maxSize ||
 		(in.Teams != 2 && in.Teams != 3) || in.Size < 2*in.Teams ||
 		(in.Level != "casual" && in.Level != "middle" && in.Level != "strong") {
 		web.Fail(w, http.StatusBadRequest, "bad_game", nil)
@@ -137,14 +167,13 @@ func (s *Service) create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(ctx)
 
-	var price int64
-	var t time.Time
-	err = tx.QueryRow(ctx, `select price_per_hour, clock_timestamp() from fields where id = $1`, in.FieldID).Scan(&price, &t)
-	if errors.Is(err, pgx.ErrNoRows) {
-		s.reject(w, notFound)
+	tariffs, err := LoadTariffs(ctx, tx, in.FieldID)
+	if err != nil {
+		s.fail(w, err)
 		return
 	}
-	if err != nil {
+	var t time.Time
+	if err := tx.QueryRow(ctx, `select clock_timestamp()`).Scan(&t); err != nil {
 		web.Internal(w, err)
 		return
 	}
@@ -154,7 +183,11 @@ func (s *Service) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// The rent is fixed now; later tariff changes don't touch this room.
-	rentTenge := price * int64(in.End.Sub(in.Start)/time.Minute) / 60
+	rentTenge, open := rent(tariffs, in.Start, in.End)
+	if !open {
+		s.reject(w, closed)
+		return
+	}
 
 	var bookingID, roomID string
 	err = tx.QueryRow(ctx, `

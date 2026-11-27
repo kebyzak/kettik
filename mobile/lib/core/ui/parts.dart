@@ -331,8 +331,6 @@ class Avatar extends StatelessWidget {
   }
 }
 
-/// A short note at the bottom, for a request the server turned down.
-void tell(BuildContext context, Rejection reason) =>
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(rejectionText(context.l10n, reason))),
-    );
+void tell(BuildContext context, Rejection reason) => ScaffoldMessenger.of(
+  context,
+).showSnackBar(SnackBar(content: Text(rejectionText(context.l10n, reason))));

@@ -1,0 +1,135 @@
+/* «Разметка», the kettik system from the design canvas. */
+:root {
+  --ink: #22302a;      /* графит: text, buttons */
+  --ink2: #55635b;
+  --chalk: #edf1e9;    /* мел: background */
+  --edge: #dce6d4;
+  --sheet: #ffffff;
+  --pitch: #6ea464;
+  --pitch-text: #3b7334;
+  --signal: #a8501a;
+  --line: #e3e9de;
+  --danger: #b3261e;
+  font-family: Onest, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ink);
+  background: var(--chalk);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+h1, h2, h3, .logo, .head, .hours, .time, dd {
+  font-family: Montserrat, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+h1 { margin: 0; font-size: 22px; font-weight: 700; }
+h2 { margin: 0; font-size: 18px; font-weight: 700; }
+h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink2); }
+p { margin: 0; }
+
+button, input, select { font: inherit; color: inherit; }
+button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--chalk);
+  font-weight: 600;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: default; }
+button.primary { background: var(--ink); color: var(--sheet); }
+button.quiet { background: none; text-decoration: underline; text-underline-offset: 3px; }
+button.danger { background: none; border: 2px solid var(--danger); color: var(--danger); }
+button.round { width: 40px; min-height: 40px; padding: 0; background: var(--sheet); font-size: 18px; }
+:focus-visible { outline: 3px solid var(--pitch-text); outline-offset: 2px; }
+
+label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink2); }
+input, select {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-size: 15px;
+}
+input.price { width: 120px; }
+
+.card { background: var(--sheet); border-radius: 20px; padding: 24px; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.row.end { align-items: flex-end; }
+.grow { flex: 1; }
+.muted { color: var(--ink2); }
+.error { color: var(--danger); font-weight: 600; }
+.ok { color: var(--pitch-text); font-weight: 600; }
+.signal { color: var(--signal); font-weight: 600; font-size: 13px; }
+.note { padding: 12px 16px; border-radius: 16px; background: var(--chalk); font-size: 13px; }
+.pill { padding: 10px 18px; border-radius: 22px; background: var(--sheet); font-weight: 600; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.logo { display: inline-flex; align-items: baseline; gap: 8px; font-size: 22px; font-weight: 700; }
+.logo small { font-size: 11px; font-weight: 500; color: var(--ink2); }
+
+.signin { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.signin .card { width: min(400px, 100%); }
+
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; padding: 16px 32px; }
+.tabs { display: flex; gap: 4px; padding: 4px; border-radius: 24px; background: var(--sheet); }
+.tabs button { background: none; }
+.tabs button[aria-current='page'] { background: var(--ink); color: var(--sheet); }
+.venue-pick select { border-radius: 22px; font-weight: 600; }
+
+.page { max-width: 1100px; margin: 0 auto; padding: 0 32px 48px; }
+.field { border-top: 1px solid var(--line); padding-top: 16px; }
+.tariff { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 0; padding: 0; border: 0; }
+.days { display: flex; gap: 4px; }
+.days button { width: 44px; padding: 0; background: var(--chalk); }
+.days button.on { background: var(--pitch); color: var(--ink); }
+.segmented { display: flex; gap: 4px; padding: 4px; border-radius: 24px; background: var(--chalk); }
+.segmented button { flex: 1; background: none; padding: 0 8px; }
+.segmented button[aria-checked='true'] { background: var(--ink); color: var(--sheet); }
+
+dl { margin: 0; display: grid; grid-template-columns: 1fr auto; row-gap: 8px; }
+dt { color: var(--ink2); }
+dd { margin: 0; font-size: 13px; font-weight: 700; }
+
+/* Calendar: a lane per field, an hour every 64px. */
+.calendar { display: flex; gap: 24px; padding: 0 32px 32px; align-items: flex-start; }
+.calendar > main { min-width: 0; }
+.calendar .side { width: 360px; flex: none; position: sticky; top: 16px; min-height: 420px; }
+.grid { display: grid; padding: 0; overflow-x: auto; }
+.head {
+  height: 52px; padding: 0 12px; display: flex; align-items: center;
+  font-size: 13px; font-weight: 700; border-left: 1px solid var(--line);
+}
+.head:first-child { border-left: 0; }
+.hours { position: relative; }
+.hours span { position: absolute; right: 8px; margin-top: 4px; font-size: 11px; font-weight: 500; color: var(--ink2); }
+.lane {
+  position: relative;
+  border-left: 1px solid var(--line);
+  background-image: linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+}
+.block {
+  position: absolute; left: 6px; right: 6px;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 2px;
+  min-height: 0; padding: 6px 10px; border-radius: 14px; overflow: hidden; text-align: left;
+}
+.block .time { font-size: 11px; font-weight: 700; }
+.block .title { font-size: 13px; font-weight: 600; }
+.block[aria-pressed='true'] { outline: 3px solid var(--signal); outline-offset: 1px; }
+.k-confirmed { background: var(--ink); color: var(--sheet); }
+.k-held { background: var(--sheet); color: var(--ink); box-shadow: inset 0 0 0 2px var(--pitch); }
+.k-block { background: repeating-linear-gradient(135deg, #c3cebd 0 3px, var(--line) 3px 6px); color: var(--ink); }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--ink2); }
+.legend span { display: flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 14px; border-radius: 5px; }
+
+@media (max-width: 900px) {
+  .top, .page { padding-left: 16px; padding-right: 16px; }
+  .calendar { flex-direction: column; padding: 0 16px 24px; }
+  .calendar .side { width: 100%; position: static; min-height: 0; }
+}

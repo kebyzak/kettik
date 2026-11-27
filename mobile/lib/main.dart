@@ -11,7 +11,6 @@ Future<void> main() async {
   final session = Session(api);
   final store = GamesStore(api);
   await session.restore();
-  // Signing in or out changes which games are the player's.
   session.addListener(store.refresh);
   store.watch();
   runApp(

@@ -292,7 +292,7 @@ func parseName(raw string) (string, bool) {
 	return name, n >= 2 && n <= 40
 }
 
-// The API listens on loopback behind Nginx in prod; only then is X-Real-IP trusted.
+// The API listens on loopback behind Caddy in prod (header_up X-Real-IP); only then is X-Real-IP trusted.
 func clientIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

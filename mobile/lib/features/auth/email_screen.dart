@@ -9,7 +9,6 @@ import 'package:kettik/core/ui/words.dart';
 import 'package:kettik/features/auth/auth_page.dart';
 import 'package:kettik/features/auth/code_screen.dart';
 
-/// First step for everyone: one address both signs in and signs up.
 class EmailScreen extends StatefulWidget {
   const EmailScreen({super.key, required this.session});
 

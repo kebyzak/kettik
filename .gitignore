@@ -1,3 +1,5 @@
 kettik-balance-green/*.zip
 .idea/
 /docs/kettik_product_report.pdf
+backend/kettik-api
+backend/kettik-worker

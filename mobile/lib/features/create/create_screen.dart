@@ -11,8 +11,8 @@ import 'package:kettik/features/auth/sign_in.dart';
 import 'package:kettik/features/booking/hold_screen.dart';
 import 'package:kettik/core/ui/words.dart';
 
-const _slots = [(20, 0), (21, 0), (21, 30), (22, 0), (22, 30), (23, 0)];
 const _durations = [60, 90, 120];
+const _days = 7;
 const minSize = 6;
 const maxSize = 22;
 
@@ -26,12 +26,14 @@ class CreateScreen extends StatefulWidget {
 }
 
 class _CreateScreenState extends State<CreateScreen> {
-  (int, int)? _slot;
+  List<Pitch>? _pitches;
+  var _pitch = 0;
+  var _day = 0;
   var _duration = 1;
+  List<Slot>? _slots;
+  DateTime? _start;
   var _size = 15;
   var _level = 0;
-  Pitch? _pitch;
-  var _busy = <(DateTime, DateTime)>[];
   Rejection? _loadFailed;
 
   @override
@@ -40,52 +42,51 @@ class _CreateScreenState extends State<CreateScreen> {
     _load();
   }
 
-  Future<void> _load() async {
-    // Called from initState, so read the scope without depending on it.
-    final store = context.getInheritedWidgetOfExactType<AppScope>()!.store;
+  DateTime _date(int i) {
     final now = DateTime.now();
-    final day = DateTime(now.year, now.month, now.day);
+    return DateTime(now.year, now.month, now.day + i);
+  }
+
+  Future<void> _load() async {
+    final store = context.getInheritedWidgetOfExactType<AppScope>()!.store;
     try {
-      final pitch = _pitch ?? await store.pitch();
-      final busy = await store.busy(
-        pitch.fieldId,
-        day,
-        day.add(const Duration(days: 1, hours: 3)),
-      );
+      final pitches = _pitches ?? await store.pitches();
+      final slots = pitches.isEmpty
+          ? const <Slot>[]
+          : await store.slots(
+              pitches[_pitch].fieldId,
+              _date(_day),
+              _durations[_duration],
+            );
       if (!mounted) return;
       setState(() {
-        _pitch = pitch;
-        _busy = busy;
-        _loadFailed = null;
+        _pitches = pitches;
+        _slots = slots;
       });
     } on BookingRejected catch (e) {
       if (mounted) setState(() => _loadFailed = e.reason);
     }
   }
 
-  DateTime _at(DateTime now, (int, int) s) =>
-      DateTime(now.year, now.month, now.day, s.$1, s.$2);
-
-  Duration get _length => Duration(minutes: _durations[_duration]);
-
-  bool _open(DateTime now, (int, int) s) {
-    final start = _at(now, s);
-    final end = start.add(_length);
-    return !_busy.any((b) => b.$1.isBefore(end) && start.isBefore(b.$2)) &&
-        !start.subtract(fundingCloseBeforeStart).isBefore(now);
+  void _choose(VoidCallback change) {
+    setState(() {
+      change();
+      _slots = null;
+      _loadFailed = null;
+    });
+    _load();
   }
 
-  Future<void> _create(DateTime now, (int, int) slot) async {
+  Future<void> _create(Slot slot) async {
     final me = await signIn(context);
     if (me == null || !mounted) return;
     final store = AppScope.of(context).store;
-    final start = _at(now, slot);
     final String id;
     try {
       id = await store.create(
-        fieldId: _pitch!.fieldId,
-        start: start,
-        end: start.add(_length),
+        fieldId: _pitches![_pitch].fieldId,
+        start: slot.start,
+        end: slot.end,
         size: _size,
         teams: _teamsFor(_size),
         level: Level.values[_level],
@@ -93,7 +94,7 @@ class _CreateScreenState extends State<CreateScreen> {
     } on BookingRejected catch (e) {
       if (!mounted) return;
       tell(context, e.reason);
-      setState(() => _slot = null);
+      setState(() => _start = null);
       _load();
       return;
     }
@@ -105,20 +106,28 @@ class _CreateScreenState extends State<CreateScreen> {
     );
   }
 
-  Tenge get _rent => Tenge(_pitch!.hourly.value * _durations[_duration] ~/ 60);
-
   @override
   Widget build(BuildContext context) {
     final now = AppScope.of(context).now();
-    final pitch = _pitch;
-    if (pitch == null) return _Loading(failed: _loadFailed, retry: _load);
-    final slot = _slot != null && _open(now, _slot!)
-        ? _slot
-        : _slots.where((s) => _open(now, s)).firstOrNull;
-    final shares = splitRent(_rent, _size);
+    final l = context.l10n;
+    final pitches = _pitches;
+    if (pitches == null || pitches.isEmpty) {
+      return _Loading(
+        failed: _loadFailed,
+        empty: pitches != null,
+        retry: () => _choose(() {}),
+      );
+    }
+    final open = [
+      for (final s in _slots ?? const <Slot>[])
+        if (now.isBefore(fundingDeadline(createdAt: now, start: s.start))) s,
+    ];
+    final slot =
+        open.where((s) => s.start == _start).firstOrNull ?? open.firstOrNull;
+    final shares = splitRent(slot?.rent ?? const Tenge(0), _size);
     final perPlayer = shares.first == shares.last
         ? formatTenge(shares.last)
-        : context.l10n.fromAmount(formatTenge(shares.last));
+        : l.fromAmount(formatTenge(shares.last));
     return Scaffold(
       body: SafeArea(
         child: ListView(
@@ -126,62 +135,78 @@ class _CreateScreenState extends State<CreateScreen> {
           children: [
             Row(
               children: [
-                Text(context.l10n.createGame, style: display(22)),
+                Text(l.createGame, style: display(22)),
                 const Spacer(),
                 Transform.translate(
                   offset: const Offset(12, 0),
-                  child: Back(
-                    tooltip: context.l10n.close,
-                    icon: Icons.close_rounded,
-                  ),
+                  child: Back(tooltip: l.close, icon: Icons.close_rounded),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Sheet(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.l10n.pitchOne(pitch.venue.name),
-                    style: body(15, weight: 600),
-                  ),
-                  Text(
-                    context.l10n.artificialTurf(pitch.venue.address),
-                    style: body(13, color: K.ink2),
-                  ),
-                ],
+            for (var i = 0; i < pitches.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _PitchTile(
+                  pitches[i],
+                  selected: i == _pitch,
+                  onTap: () => _choose(() => _pitch = i),
+                ),
               ),
-            ),
-            _Label(context.l10n.startOn(longDate(context.l10n, now))),
-            GridView.count(
-              crossAxisCount: 4,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1.8,
-              children: [
-                for (final s in _slots)
-                  _Choice(
-                    label: hm(_at(now, s)),
-                    selected: s == slot,
-                    enabled: _open(now, s),
-                    numeric: true,
-                    onTap: () => setState(() => _slot = s),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 44,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _days,
+                separatorBuilder: (context, i) => const SizedBox(width: 8),
+                itemBuilder: (context, i) => SizedBox(
+                  width: 96,
+                  child: _Choice(
+                    label: switch (i) {
+                      0 => l.today,
+                      1 => l.tomorrow,
+                      _ => shortDay(l, _date(i)),
+                    },
+                    selected: i == _day,
+                    enabled: true,
+                    onTap: () => _choose(() => _day = i),
                   ),
-              ],
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             _Segmented(
-              labels: [
-                context.l10n.duration60,
-                context.l10n.duration90,
-                context.l10n.duration120,
-              ],
+              labels: [l.duration60, l.duration90, l.duration120],
               selected: _duration,
-              onSelect: (i) => setState(() => _duration = i),
+              onSelect: (i) => _choose(() => _duration = i),
             ),
+            _Label(l.startOn(longDate(l, _date(_day)))),
+            if (_loadFailed case final failed?)
+              Text(rejectionText(l, failed), style: body(15, color: K.ink2))
+            else if (_slots == null)
+              const Center(child: CircularProgressIndicator(color: K.ink))
+            else if (open.isEmpty)
+              Text(l.noSlotsToday, style: body(15, color: K.ink2))
+            else
+              GridView.count(
+                crossAxisCount: 4,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 1.8,
+                children: [
+                  for (final s in open)
+                    _Choice(
+                      label: hm(s.start),
+                      selected: s == slot,
+                      enabled: true,
+                      numeric: true,
+                      onTap: () => setState(() => _start = s.start),
+                    ),
+                ],
+              ),
             const SizedBox(height: 16),
             Sheet(
               padding: EdgeInsets.zero,
@@ -277,7 +302,10 @@ class _CreateScreenState extends State<CreateScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            context.l10n.rentSplit(formatTenge(_rent), _size),
+                            context.l10n.rentSplit(
+                              formatTenge(slot?.rent ?? const Tenge(0)),
+                              _size,
+                            ),
                             style: body(15, color: K.ink2),
                           ),
                         ),
@@ -313,7 +341,7 @@ class _CreateScreenState extends State<CreateScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
                   context.l10n.fundingClosesAt(
-                    hm(fundingDeadline(createdAt: now, start: _at(now, slot))),
+                    hm(fundingDeadline(createdAt: now, start: slot.start)),
                   ),
                   style: body(13, color: K.ink2),
                 ),
@@ -322,7 +350,7 @@ class _CreateScreenState extends State<CreateScreen> {
               slot == null
                   ? context.l10n.noSlotsToday
                   : context.l10n.createAndPay(formatTenge(shares.first)),
-              onPressed: slot == null ? null : () => _create(now, slot),
+              onPressed: slot == null ? null : () => _create(slot),
             ),
           ],
         ),
@@ -332,9 +360,14 @@ class _CreateScreenState extends State<CreateScreen> {
 }
 
 class _Loading extends StatelessWidget {
-  const _Loading({required this.failed, required this.retry});
+  const _Loading({
+    required this.failed,
+    required this.empty,
+    required this.retry,
+  });
 
   final Rejection? failed;
+  final bool empty;
   final VoidCallback retry;
 
   @override
@@ -354,18 +387,54 @@ class _Loading extends StatelessWidget {
             ),
             const Spacer(),
             Center(
-              child: failed == null
+              child: failed == null && !empty
                   ? const CircularProgressIndicator(color: K.ink)
                   : Text(
-                      rejectionText(context.l10n, failed!),
+                      failed == null
+                          ? context.l10n.noVenues
+                          : rejectionText(context.l10n, failed!),
                       textAlign: TextAlign.center,
                       style: body(15, color: K.ink2),
                     ),
             ),
             const Spacer(),
-            if (failed != null)
+            if (failed != null || empty)
               PillButton(context.l10n.tryAgainShort, onPressed: retry),
           ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _PitchTile extends StatelessWidget {
+  const _PitchTile(this.pitch, {required this.selected, required this.onTap});
+
+  final Pitch pitch;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    selected: selected,
+    child: Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Sheet(
+          ring: selected ? K.ink : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${pitch.venue.name} · ${pitch.field}',
+                style: body(15, weight: 600),
+              ),
+              Text(pitch.venue.address, style: body(13, color: K.ink2)),
+            ],
+          ),
         ),
       ),
     ),

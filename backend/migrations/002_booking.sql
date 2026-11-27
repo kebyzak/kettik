@@ -1,8 +1,23 @@
 -- +goose Up
 create extension if not exists btree_gist;
 
+-- A sports complex on kettik business; its owners run its venues.
+create table businesses (
+    id uuid primary key default gen_random_uuid(),
+    name text not null,
+    created_at timestamptz not null default now()
+);
+
+create table business_members (
+    business_id uuid not null references businesses on delete cascade,
+    player_id uuid not null references players on delete cascade,
+    primary key (business_id, player_id)
+);
+create index on business_members (player_id);
+
 create table venues (
     id uuid primary key default gen_random_uuid(),
+    business_id uuid not null references businesses,
     name text not null,
     address text not null
 );
@@ -10,17 +25,30 @@ create table venues (
 create table fields (
     id uuid primary key default gen_random_uuid(),
     venue_id uuid not null references venues,
-    name text not null,
-    -- shortcut: one flat price per field in whole tenge; move to tariffs by day and hour with the business cabinet
-    price_per_hour int not null check (price_per_hour > 0)
+    name text not null
 );
 
--- Holds the field's time. A manual booking has no room and starts confirmed.
+-- A field is open only in its tariffs' hours. Minutes count from local midnight
+-- (Astana) in half hours; days are ISO weekdays, 1 = Monday.
+create table tariffs (
+    id uuid primary key default gen_random_uuid(),
+    field_id uuid not null references fields on delete cascade,
+    days int[] not null,
+    from_min int not null,
+    to_min int not null,
+    price_per_hour int not null check (price_per_hour > 0) -- tenge
+);
+create index on tariffs (field_id);
+
+-- Holds the field's time. A game booking has a room; a manual booking or a
+-- block (maintenance) has none and starts confirmed.
 create table bookings (
     id uuid primary key default gen_random_uuid(),
     field_id uuid not null references fields,
     during tstzrange not null check (not isempty(during) and lower_inc(during) and not upper_inc(during)),
     status text not null check (status in ('held', 'confirmed', 'expired', 'cancelled')),
+    kind text not null default 'game' check (kind in ('game', 'manual', 'block')),
+    note text not null default '',
     created_at timestamptz not null default now(),
     -- [19:00, 20:00) and [20:00, 21:00) don't overlap.
     exclude using gist (field_id with =, during with &&) where (status in ('held', 'confirmed'))
@@ -84,5 +112,8 @@ drop table places;
 drop table payments;
 drop table rooms;
 drop table bookings;
+drop table tariffs;
 drop table fields;
 drop table venues;
+drop table business_members;
+drop table businesses;

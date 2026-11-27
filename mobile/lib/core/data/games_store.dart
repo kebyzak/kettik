@@ -6,11 +6,10 @@ import 'package:kettik/core/data/api.dart';
 import 'package:kettik/core/domain/game.dart';
 import 'package:kettik/core/domain/money.dart';
 
-/// The pitch a new game is booked on.
-typedef Pitch = ({String fieldId, Venue venue, Tenge hourly});
+typedef Pitch = ({String fieldId, String field, Venue venue});
 
-/// Games from the server. The server decides every rule; between refreshes
-/// [Game.at] runs the same clock rules so countdowns stay live.
+typedef Slot = ({DateTime start, DateTime end, Tenge rent});
+
 class GamesStore extends ChangeNotifier {
   GamesStore(this._api);
 
@@ -22,7 +21,6 @@ class GamesStore extends ChangeNotifier {
 
   Game game(String id, DateTime now) => _games[id]!.at(now);
 
-  /// The feed and the player's own games.
   List<Game> games(DateTime now) => [
     for (final id in {..._feed, ..._mine}) _games[id]!.at(now),
   ]..sort((a, b) => a.start.compareTo(b.start));
@@ -33,13 +31,11 @@ class GamesStore extends ChangeNotifier {
         if (g.numberOf(me) case final n? when g.placeAt(n) is HeldPlace) (g, n),
   ];
 
-  // shortcut: polling every 15 s; move to a WebSocket per room when rooms get busy.
   void watch() {
     _poll ??= Timer.periodic(const Duration(seconds: 15), (_) => refresh());
     refresh();
   }
 
-  /// Reloads the feed, and the player's games when signed in.
   Future<void> refresh() async {
     try {
       final feed = await _api.get('/games') as List<Object?>;
@@ -50,14 +46,13 @@ class GamesStore extends ChangeNotifier {
       _mine = {for (final g in mine) _keep(g)};
       notifyListeners();
     } on ApiError {
-      return; // offline: keep what we have and try on the next tick
+      return;
     }
   }
 
   Future<void> hold(String id, int number) =>
       _act(() => _api.post('/games/$id/places/$number/hold'));
 
-  // shortcut: the dev server marks the attempt paid; open the provider's payment page once Halyk ePay is wired.
   Future<void> pay(String id, int number) => _act(() async {
     final attempt = await _api.post(
       '/games/$id/places/$number/pay',
@@ -99,30 +94,40 @@ class GamesStore extends ChangeNotifier {
     return id;
   }
 
-  // shortcut: the first field of the first venue, as the create screen offers one pitch.
-  Future<Pitch> pitch() => _call(() async {
+  Future<List<Pitch>> pitches() => _call(() async {
     final venues = await _api.get('/venues') as List<Object?>;
-    final v = venues.first as Map<String, Object?>;
-    final f = (v['fields'] as List<Object?>).first as Map<String, Object?>;
-    return (
-      fieldId: f['id'] as String,
-      venue: Venue(name: v['name'] as String, address: v['address'] as String),
-      hourly: Tenge(f['pricePerHour'] as int),
-    );
+    return [
+      for (final v in venues.cast<Map<String, Object?>>())
+        for (final f
+            in (v['fields'] as List<Object?>).cast<Map<String, Object?>>())
+          (
+            fieldId: f['id'] as String,
+            field: f['name'] as String,
+            venue: Venue(
+              name: v['name'] as String,
+              address: v['address'] as String,
+            ),
+          ),
+    ];
   });
 
-  Future<List<(DateTime, DateTime)>> busy(
+  Future<List<Slot>> slots(
     String fieldId,
-    DateTime from,
-    DateTime to,
+    DateTime day,
+    int minutes,
   ) => _call(() async {
-    final q =
-        'from=${Uri.encodeQueryComponent(from.toUtc().toIso8601String())}'
-        '&to=${Uri.encodeQueryComponent(to.toUtc().toIso8601String())}';
-    final list = await _api.get('/fields/$fieldId/busy?$q') as List<Object?>;
+    final date =
+        '${day.year}-${'${day.month}'.padLeft(2, '0')}-${'${day.day}'.padLeft(2, '0')}';
+    final list = await _api.get(
+      '/fields/$fieldId/slots?date=$date&minutes=$minutes',
+    ) as List<Object?>;
     return [
       for (final s in list.cast<Map<String, Object?>>())
-        (_time(s['start']), _time(s['end'])),
+        (
+          start: _time(s['start']),
+          end: _time(s['end']),
+          rent: Tenge(s['rent'] as int),
+        ),
     ];
   });
 
@@ -162,6 +167,7 @@ const _rejections = {
   'not_held': Rejection.notHeld,
   'cannot_leave': Rejection.cannotLeave,
   'slot_taken': Rejection.slotTaken,
+  'closed': Rejection.slotTaken,
   'too_late': Rejection.tooLate,
   'offline': Rejection.offline,
 };

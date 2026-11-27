@@ -438,7 +438,10 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get noSlotsToday => 'На сегодня свободного времени нет';
+  String get noSlotsToday => 'В этот день свободного времени нет';
+
+  @override
+  String get noVenues => 'Площадок пока нет. Скоро появятся';
 
   @override
   String createAndPay(String amount) {

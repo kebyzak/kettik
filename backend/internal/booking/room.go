@@ -29,6 +29,7 @@ const (
 	cannotLeave   Rejection = "cannot_leave"
 	tooLate       Rejection = "too_late"
 	slotTaken     Rejection = "slot_taken"
+	closed        Rejection = "closed"
 	notFound      Rejection = "not_found"
 )
 

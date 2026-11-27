@@ -40,8 +40,6 @@ class KettikApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           locale: locale.value,
           supportedLocales: appLocales,
-          // Not AppLocalizations.localizationsDelegates: gen-l10n still wires the
-          // deprecated flutter_localizations classes, which material_ui widgets don't read.
           localizationsDelegates: const [
             AppLocalizations.delegate,
             ...GlobalMaterialLocalizations.delegates,

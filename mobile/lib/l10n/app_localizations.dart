@@ -793,8 +793,14 @@ abstract class AppLocalizations {
   /// No description provided for @noSlotsToday.
   ///
   /// In ru, this message translates to:
-  /// **'На сегодня свободного времени нет'**
+  /// **'В этот день свободного времени нет'**
   String get noSlotsToday;
+
+  /// No description provided for @noVenues.
+  ///
+  /// In ru, this message translates to:
+  /// **'Площадок пока нет. Скоро появятся'**
+  String get noVenues;
 
   /// No description provided for @createAndPay.
   ///

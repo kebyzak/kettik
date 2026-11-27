@@ -7,7 +7,6 @@ import 'package:kettik/core/ui/format.dart';
 import 'package:kettik/core/ui/theme.dart';
 import 'package:kettik/l10n/app_localizations.dart';
 
-// Russian first: Flutter falls back to the first locale for other device languages.
 const appLocales = [Locale('ru'), Locale('kk'), Locale('en')];
 
 extension L10nContext on BuildContext {

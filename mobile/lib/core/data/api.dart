@@ -4,15 +4,12 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
-// 10.0.2.2 is the host machine from the Android emulator.
-// Point a phone or another server at it: --dart-define=API_URL=https://...
+
 const apiUrl = String.fromEnvironment(
   'API_URL',
   defaultValue: 'http://10.0.2.2:8080',
 );
 
-/// The server said no (`reason` is its `error` code), or it couldn't be
-/// reached (`status` 0, reason `offline`).
 class ApiError implements Exception {
   const ApiError(this.status, this.reason, [this.body = const {}]);
 

@@ -19,7 +19,6 @@ class AppScope extends InheritedWidget {
   final Session session;
   final Player? me;
   final DateTime Function() now;
-  // null follows the device language.
   final ValueNotifier<Locale?> locale;
 
   static AppScope of(BuildContext context) =>

@@ -127,7 +127,8 @@
   "perPlayer": " per player",
   "level": "Level",
   "fundingClosesAt": "Collecting closes at {time}. If we don't fill up, everyone gets their money back.",
-  "noSlotsToday": "No free time left today",
+  "noSlotsToday": "No free time this day",
+  "noVenues": "No venues yet. They are coming soon",
   "createAndPay": "Create and pay · {amount}",
   "slotTaken": "{time}, taken",
 

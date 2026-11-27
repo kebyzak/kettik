@@ -16,6 +16,7 @@ import (
 
 	"kettik/internal/auth"
 	"kettik/internal/booking"
+	"kettik/internal/business"
 	"kettik/migrations"
 )
 
@@ -44,9 +45,10 @@ func main() {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
-	a := auth.New(db, []byte(secret), logCode)
+	a := auth.New(db, []byte(secret), codeSender())
 	a.Routes(mux)
 	booking.New(db, a).Routes(mux, os.Getenv("DEV") == "1")
+	business.New(db, a).Routes(mux)
 
 	srv := &http.Server{
 		Addr:              env("ADDR", "127.0.0.1:8080"),
@@ -77,7 +79,7 @@ func migrate(db *pgxpool.Pool) error {
 	return goose.Up(sqlDB, ".")
 }
 
-// shortcut: codes go to the log until an email provider is picked (see TODO.md).
+// logCode prints the code instead of mailing it, for local dev without SMTP.
 func logCode(_ context.Context, email, code string) error {
 	log.Printf("code for %s: %s", email, code)
 	return nil

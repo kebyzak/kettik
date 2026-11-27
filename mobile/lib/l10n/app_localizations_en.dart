@@ -438,7 +438,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get noSlotsToday => 'No free time left today';
+  String get noSlotsToday => 'No free time this day';
+
+  @override
+  String get noVenues => 'No venues yet. They are coming soon';
 
   @override
   String createAndPay(String amount) {

@@ -41,7 +41,6 @@ final class HeldPlace extends Place {
 
   final Player player;
   final DateTime until;
-  // Set when the hold buys out a confirmed player who is leaving.
   final Player? replacing;
 }
 
@@ -49,7 +48,6 @@ final class PaidPlace extends Place {
   const PaidPlace(this.player, {this.leaving = false});
 
   final Player player;
-  // Leaving after confirmation: open to a replacement until replaceDeadline.
   final bool leaving;
 }
 
@@ -144,7 +142,6 @@ class Game {
           HeldPlace(:final until, replacing: final r)
               when !now.isBefore(until) =>
             r == null ? const FreePlace() : PaidPlace(r, leaving: replacing),
-          // No replacement in time: the leaver keeps the place and the charge.
           PaidPlace(:final player, leaving: true) when !replacing => PaidPlace(
             player,
           ),
@@ -205,9 +202,6 @@ class Game {
     _ => this,
   };
 
-  // Before confirmation the place is freed and refunded; the organizer leaving
-  // cancels the room and refunds everyone. After confirmation the booking
-  // stays and the leaver is refunded only if a replacement pays in time.
   Game leave(int number, DateTime now) {
     final game = at(now);
     final place = game.placeAt(number);
